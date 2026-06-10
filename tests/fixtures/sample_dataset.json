@@ -1,0 +1,19 @@
+{
+  "vin": "WVWZZZTESTVIN0001",
+  "user_id": "test-user",
+  "Data": [
+    {"key": "k1", "dataFieldName": "battery_state_report.soc", "value": "69"},
+    {"key": "k2", "dataFieldName": "mileage.value", "value": "116803"},
+    {"key": "k3", "dataFieldName": "settings.target_soc", "value": "80"},
+    {"key": "k4", "dataFieldName": "battery_state_report.charge_power", "value": "0.0"},
+    {"key": "k5", "dataFieldName": "min_temperature", "value": "19.5"},
+    {"key": "k6", "dataFieldName": "locked", "value": "true"},
+    {"key": "k7", "dataFieldName": "parking_brake", "value": "true"},
+    {"key": "k8", "dataFieldName": "remaining_climate_time", "value": "0s"},
+    {"key": "k9", "dataFieldName": "car_captured_time", "value": "2026-05-29T22:59:27Z"},
+    {"key": "k10", "dataFieldName": "report_type", "value": "RPT_0"},
+    {"key": "k11", "dataFieldName": "charging_state_report.current_charge_state", "value": "CHARGING_STATE_READY_FOR_CHARGING"},
+    {"key": "k12", "dataFieldName": "range.value", "value": "312"},
+    {"key": "k13", "dataFieldName": "range.unit", "value": "KM"}
+  ]
+}

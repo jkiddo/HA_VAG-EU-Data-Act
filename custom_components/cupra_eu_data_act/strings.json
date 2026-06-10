@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "VW Group EU Data Act",
+        "description": "Select your vehicle brand and sign in with the same credentials you use on the EU Data Act portal.",
+        "data": {
+          "brand": "Brand",
+          "email": "Email",
+          "password": "Password"
+        }
+      },
+      "vehicle": {
+        "title": "Select vehicle",
+        "data": {
+          "vin": "Vehicle"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate",
+        "description": "Enter the password for {email} ({brand}).",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password for the selected brand.",
+      "cannot_connect": "Could not connect to the EU Data Act portal.",
+      "no_vehicles": "No vehicles were found for this account.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This vehicle is already configured.",
+      "auth": "Authentication failed; please re-add the integration.",
+      "reauth_successful": "Re-authentication was successful."
+    }
+  }
+}

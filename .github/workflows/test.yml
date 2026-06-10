@@ -1,0 +1,24 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependencies
+        run: pip install aiohttp
+      - name: Offline core tests
+        run: python tests/test_offline.py
+      - name: API mock tests
+        run: python tests/test_api_mock.py
+      - name: Brand registry tests
+        run: python tests/test_brands.py
