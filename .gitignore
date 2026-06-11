@@ -1,6 +1,15 @@
 .venv/
+.venv-ha/
 __pycache__/
 *.pyc
 .env
 *.har
 WVWZZZTESTVIN*.json
+
+# Private brainstorming / roadmap notes (not for publication)
+IDEAS.local.md
+NOTES.local.md
+*.local.md
+
+# Local-only icon tooling (brand PNGs in brand/ are committed)
+tools/generate_brand_icons.py

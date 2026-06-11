@@ -8,8 +8,6 @@ import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers.update_coordinator import UpdateFailed
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
@@ -23,7 +21,7 @@ from .const import (
     DOMAIN,
     raw_unique_id,
 )
-from .coordinator import EudaCoordinator, EudaUpdateNotReady
+from .coordinator import EudaCoordinator
 from .data import load_dictionary
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
@@ -39,7 +37,15 @@ type EudaConfigEntry = ConfigEntry[EudaRuntimeData]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: EudaConfigEntry) -> bool:
-    """Set up VW Group EU Data Act from a config entry."""
+    """Set up VW Group EU Data Act from a config entry.
+
+    Setup is intentionally non-blocking: the first portal dataset can take
+    15–60 minutes to appear after subscription, so blocking setup on it would
+    leave the user staring at "Setting up..." for a long time. Instead the
+    entry loads immediately with a single status sensor explaining what the
+    integration is waiting for; the dataset-derived entities appear via the
+    discovery listener as soon as real data arrives.
+    """
     # Own session (own cookie jar — auth is cookie-based) but reuse Home
     # Assistant's shared connector so we benefit from its warm DNS cache and are
     # resilient to transient DNS hiccups. connector_owner=False so closing our
@@ -62,18 +68,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: EudaConfigEntry) -> bool
             brand,
         )
         coordinator = EudaCoordinator(hass, entry, client)
-
-        try:
-            await coordinator.async_config_entry_first_refresh()
-        except UpdateFailed as err:
-            if isinstance(err, EudaUpdateNotReady):
-                raise ConfigEntryNotReady(
-                    translation_domain=DOMAIN,
-                    translation_key=err.translation_key,
-                    translation_placeholders=err.translation_placeholders,
-                ) from err
-            raise ConfigEntryNotReady(str(err)) from err
-
         entry.runtime_data = EudaRuntimeData(coordinator=coordinator, session=session)
 
         # Migrate pre-0.1.3 raw sensor unique_ids (bare dataset key -> VIN_key)
@@ -81,6 +75,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: EudaConfigEntry) -> bool
         await _async_migrate_raw_unique_ids(hass, entry)
 
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+        # Kick off the first refresh after platform setup so the discovery
+        # listeners are already wired up when data arrives. Failures are not
+        # propagated to async_setup_entry — they are surfaced via the status
+        # sensor and HA's regular coordinator retry logic.
+        entry.async_create_background_task(
+            hass,
+            coordinator.async_refresh(),
+            name=f"{DOMAIN} initial refresh {entry.data[CONF_VIN]}",
+        )
     except Exception:
         # Setup failed: HA will not call async_unload_entry, so close the
         # session here to avoid leaking it (and its connector).

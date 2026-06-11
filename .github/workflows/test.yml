@@ -22,3 +22,19 @@ jobs:
         run: python tests/test_api_mock.py
       - name: Brand registry tests
         run: python tests/test_brands.py
+
+  ha-harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          # pytest-homeassistant-custom-component pulls in current HA core,
+          # which tracks the latest Python supported by Home Assistant.
+          python-version: "3.13"
+      - name: Install HA test harness
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements_test.txt
+      - name: Coordinator and config-flow tests
+        run: pytest tests/test_coordinator.py tests/test_config_flow.py -v

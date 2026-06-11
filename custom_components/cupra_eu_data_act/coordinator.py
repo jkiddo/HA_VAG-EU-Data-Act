@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -26,6 +27,14 @@ from .const import (
 from .data import Dataset, DataPoint
 
 _LOGGER = logging.getLogger(__name__)
+
+# Transient upstream errors worth retrying / keeping previous data for.
+_SERVER_ERROR_STATUSES = frozenset({500, 502, 503, 504})
+
+
+def _is_server_error(err: Exception) -> bool:
+    """True for HTTP 5xx ApiErrors we should retry instead of giving up."""
+    return isinstance(err, ApiError) and err.status in _SERVER_ERROR_STATUSES
 
 
 class EudaUpdateNotReady(UpdateFailed):
@@ -77,6 +86,9 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
         super().__init__(
             hass,
             _LOGGER,
+            # Pass the entry explicitly; relying on the ContextVar is
+            # deprecated and breaks in HA 2026.8.
+            config_entry=entry,
             name=f"{DOMAIN} {entry.data[CONF_VIN]}",
             update_interval=RETRY_INTERVAL,
         )
@@ -86,6 +98,10 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
         self.identifier: str = entry.data[CONF_IDENTIFIER]
         self.latest_dataset: Dataset | None = None
         self._is_initial_setup: bool = True
+        # Human-readable status the diagnostic sensor surfaces; updated by
+        # _async_update_data on each refresh.
+        self.status_label: str = "starting"
+        self.empty_snapshot_count: int = 0
 
     async def _async_update_data(self) -> dict[str, DataPoint]:
         listing = await self._async_list_with_refresh()
@@ -113,11 +129,18 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
 
         if not content:
             self._reschedule(listing)
+            self.empty_snapshot_count = len(empty_only)
+            self.status_label = (
+                "empty_snapshots" if empty_only else "waiting_for_portal_data"
+            )
             if self.data:
                 # Subsequent refresh: keep previous data
                 _LOGGER.debug("No new datasets available, keeping previous data")
                 return self.data
-            # First load with no data: fail so HA retries setup
+            # First load with no data: surface as UpdateFailed so HA logs and
+            # retries, but do not raise ConfigEntryNotReady — the entry stays
+            # loaded so the user sees a device with the status sensor explaining
+            # what is happening.
             if empty_only:
                 _LOGGER.info(
                     "Portal delivered %d empty snapshot(s) (_no_content_found); "
@@ -165,12 +188,13 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
                     self._is_initial_setup = False
                     last_error = None
                     break  # Success!
+                except AuthError as err:
+                    # Session expired or credentials invalidated by the portal;
+                    # trigger the HA reauth flow instead of silently retrying.
+                    raise ConfigEntryAuthFailed(str(err)) from err
                 except ApiError as err:
                     last_error = err
-                    is_server_error = any(
-                        code in str(err)
-                        for code in ["HTTP 500", "HTTP 502", "HTTP 503", "HTTP 504"]
-                    )
+                    is_server_error = _is_server_error(err)
 
                     if is_server_error and attempt < max_retries - 1:
                         _LOGGER.debug(
@@ -200,10 +224,7 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
             if last_error is None:
                 break
 
-            if last_error and not any(
-                code in str(last_error)
-                for code in ["HTTP 500", "HTTP 502", "HTTP 503", "HTTP 504"]
-            ):
+            if last_error and not _is_server_error(last_error):
                 break
 
         # If all downloads failed
@@ -228,6 +249,8 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
             ) from last_error
 
         self._reschedule(listing)
+        self.status_label = "ok"
+        self.empty_snapshot_count = 0
 
         # Merge new data with existing to preserve missing fields
         if self.data:
@@ -272,15 +295,14 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
                     return listing
 
                 except AuthError as err:
-                    self.update_interval = RETRY_INTERVAL
-                    raise UpdateFailed(f"Authentication failed: {err}") from err
+                    # Surface as ConfigEntryAuthFailed so HA prompts the user
+                    # to re-enter credentials (with the brand preserved from
+                    # the entry).
+                    raise ConfigEntryAuthFailed(str(err)) from err
 
                 except ApiError as err:
                     last_error = err
-                    is_server_error = any(
-                        code in str(err)
-                        for code in ["HTTP 500", "HTTP 502", "HTTP 503", "HTTP 504"]
-                    )
+                    is_server_error = _is_server_error(err)
 
                     # Retry server errors with delay
                     if is_server_error and attempt < max_retries - 1:
@@ -303,8 +325,9 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
             if last_error:
                 self.update_interval = RETRY_INTERVAL
 
-                # HTTP 400 special case
-                if "HTTP 400" in str(last_error):
+                # HTTP 400 special case: subscription not yet active
+                if isinstance(last_error, ApiError) and last_error.status == 400:
+                    self.status_label = "delivery_not_ready"
                     raise EudaUpdateNotReady(
                         "delivery_not_ready",
                         translation_placeholders={
@@ -316,11 +339,7 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
                     ) from last_error
 
                 # Server errors with existing data - return empty to keep old data
-                is_server_error = any(
-                    code in str(last_error)
-                    for code in ["HTTP 500", "HTTP 502", "HTTP 503", "HTTP 504"]
-                )
-                if is_server_error and self.data:
+                if _is_server_error(last_error) and self.data:
                     _LOGGER.error(
                         "Failed to list datasets after %d attempts: %s. Keeping previous data.",
                         max_retries,

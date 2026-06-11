@@ -88,12 +88,40 @@ def main() -> int:
     print("curated registry:")
     check("soc is curated", "battery_state_report.soc" in data.CURATED_FIELDS, True)
     check("locked is curated", "locked" in data.CURATED_FIELDS, True)
+    check(
+        "flat state_of_charge curated (PHEV)",
+        "state_of_charge" in data.CURATED_FIELDS,
+        True,
+    )
+    check(
+        "flat remaining_charging_time curated",
+        "remaining_charging_time" in data.CURATED_FIELDS,
+        True,
+    )
+    check(
+        "flat electr consumption curated",
+        "long_term_data_average_electr_engine_consumption" in data.CURATED_FIELDS,
+        True,
+    )
     _mintemp = next(s for s in data.CURATED_SENSORS_DOTTED if s.field_name == "min_temperature")
     check("min_temperature named battery", _mintemp.name, "Battery min temperature")
     format_type = data.detect_dataset_format(ds.points)
     check("fixture format dotted", format_type, "dotted")
     curated_present = {dp.field_name for dp in ds.points.values()} & data.CURATED_FIELDS
     check("fixture has curated fields", len(curated_present) >= 5, True)
+
+    # --- consumption transforms ------------------------------------------
+    print("consumption transforms:")
+    check(
+        "fuel L/1000km -> L/100km",
+        data.fuel_consumption_l_per_1000km_to_l_per_100km(168),
+        16.8,
+    )
+    check(
+        "electr kWh/1000km -> kWh/100km",
+        data.electr_consumption_kwh_per_1000km_to_kwh_per_100km(180),
+        18.0,
+    )
 
     # --- raw unique_id namespaced by VIN (multi-vehicle) ----------------
     print("raw unique_id namespacing:")
@@ -107,6 +135,106 @@ def main() -> int:
     check("missing -> previous retained", data.sticky(55, None), 55)
     check("zero is not missing", data.sticky(55, 0), 0)
     check("false is not missing", data.sticky(True, False), False)
+
+    # --- sentinel detection -----------------------------------------------
+    print("sentinel detection:")
+    check("uint32 max mileage", data.is_sentinel(4294967295, "mileage"), True)
+    check("uint32 max mileage.value", data.is_sentinel(4294967295, "mileage.value"), True)
+    check("uint16 max charging time", data.is_sentinel(65535, "remaining_charging_time"), True)
+    check(
+        "uint16 max dotted charging time",
+        data.is_sentinel(65535, "battery_state_report.remaining_charging_time_complete"),
+        True,
+    )
+    check(
+        "-1 charging time (field-specific)",
+        data.is_sentinel(-1, "remaining_charging_time"),
+        True,
+    )
+    check(
+        "-1 mileage NOT sentinel (might be valid)",
+        data.is_sentinel(-1, "mileage"),
+        False,
+    )
+    check("normal mileage 116803", data.is_sentinel(116803, "mileage"), False)
+    check("zero is not sentinel", data.is_sentinel(0, "remaining_charging_time"), False)
+    check("None is not sentinel", data.is_sentinel(None, "mileage"), False)
+    check("string is not sentinel", data.is_sentinel("FOO", "state"), False)
+    check("boolean True not sentinel", data.is_sentinel(True, "locked"), False)
+    check(
+        "uint32 max without field name",
+        data.is_sentinel(4294967295),
+        True,
+    )
+    check(
+        "int32 max without field name",
+        data.is_sentinel(2147483647),
+        True,
+    )
+
+    # --- binary decoding --------------------------------------------------
+    print("binary decoding:")
+    check("open 2 -> True (door open)", data.decode_binary_state(2, "open"), True)
+    check("open 3 -> False (door closed)", data.decode_binary_state(3, "open"), False)
+    check("open 0 -> None (unsupported)", data.decode_binary_state(0, "open"), None)
+    check("open 1 -> None (invalid)", data.decode_binary_state(1, "open"), None)
+    check(
+        "open invert 2 -> False (locked sensor on)",
+        data.decode_binary_state(2, "open", invert=True),
+        False,
+    )
+    check(
+        "open invert 3 -> True (locked sensor off)",
+        data.decode_binary_state(3, "open", invert=True),
+        True,
+    )
+    check("onoff 0 -> False", data.decode_binary_state(0, "onoff"), False)
+    check("onoff 1 -> True", data.decode_binary_state(1, "onoff"), True)
+    check(
+        "lights 0/1 -> None",
+        (data.decode_binary_state(0, "lights"), data.decode_binary_state(1, "lights")),
+        (None, None),
+    )
+    check("lights 2 -> False (off)", data.decode_binary_state(2, "lights"), False)
+    check("lights 3 -> True (left)", data.decode_binary_state(3, "lights"), True)
+    check("lights 4 -> True (right)", data.decode_binary_state(4, "lights"), True)
+    check("lights 5 -> True (both)", data.decode_binary_state(5, "lights"), True)
+    check("bool True passthrough", data.decode_binary_state(True), True)
+    check(
+        "bool False passthrough w/ invert",
+        data.decode_binary_state(False, invert=True),
+        True,
+    )
+    check("string -> None", data.decode_binary_state("OFF"), None)
+    check("None -> None", data.decode_binary_state(None), None)
+
+    # --- ApiError carries HTTP status ------------------------------------
+    print("api error status:")
+    err500 = api.ApiError("GET x -> HTTP 500", status=500)
+    err_no = api.ApiError("Connection broken")
+    check("status preserved on ApiError", err500.status, 500)
+    check("status defaults to None", err_no.status, None)
+    auth_err = api.AuthError("Login rejected")
+    check("AuthError is ApiError", isinstance(auth_err, api.ApiError), True)
+    check("AuthError default status None", auth_err.status, None)
+
+    # --- find_by_field stability against shuffle ------------------------
+    print("find_by_field:")
+    points = {
+        "ccc": data.DataPoint("ccc", "charging_state_report.current_charge_state", "C"),
+        "aaa": data.DataPoint("aaa", "charging_state_report.current_charge_state", "A"),
+        "bbb": data.DataPoint("bbb", "charging_state_report.current_charge_state", "B"),
+    }
+    dp = data.find_by_field(points, "charging_state_report.current_charge_state")
+    check("smallest key wins", dp.key, "aaa")
+    check("missing field -> None", data.find_by_field(points, "nope"), None)
+    check(
+        "Dataset.by_field still works",
+        data.Dataset(
+            vin="V", user_id=None, points=points
+        ).by_field("charging_state_report.current_charge_state").key,
+        "aaa",
+    )
 
     # --- api zip helper ---------------------------------------------------
     print("api helpers:")

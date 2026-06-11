@@ -1,5 +1,155 @@
 # Release notes
 
+## v0.4.1 — Reauth flow, robust API errors, binary refactor (2026-06-11)
+
+### Summary
+
+Hardens the integration around session expiry and upstream flakiness, and
+cleans up the binary-sensor decoding so each field declares how it encodes
+on/off instead of being guessed by name. Inspired by
+[mikrohard/hass-vw-eu-data-act PR #28](https://github.com/mikrohard/hass-vw-eu-data-act/pull/28),
+adapted to this fork's multi-brand setup and non-blocking startup.
+
+### Session expiry now triggers HA's reauth dialog
+The coordinator used to swallow expired-session errors during the dataset
+download as generic update failures, so the integration silently retried for
+hours instead of asking you to log in again. `AuthError` is now caught
+explicitly on both the listing and download paths and surfaces as
+`ConfigEntryAuthFailed`, which is what Home Assistant uses to prompt for
+re-authentication. The reauth step preserves your brand (Škoda, Cupra, …)
+from the stored entry, so re-login goes to the right OIDC client.
+
+### `ApiError` carries the HTTP status
+HTTP failures used to be detected by grepping `"HTTP 500"` out of the
+exception message — fragile and easy to break with rewording. `ApiError`
+now has a typed `status` attribute, and the coordinator branches on
+`status == 400` (subscription not yet active, surfaced as the existing
+`delivery_not_ready` state) and `status in {500, 502, 503, 504}` (transient
+upstream errors worth retrying / keeping the previous dataset). The
+integration status sensor reports `delivery_not_ready` in this case so you
+can see at a glance why no fresh data is arriving.
+
+### Binary sensors: explicit encoding instead of name guessing
+The 50-line if/elif chain in `binary_sensor.py` that decided how to read a
+boolean from a field name (`parking_brake` vs `parking_lights` vs
+`open_state` vs `locked_state` …) is gone. `CuratedBinary` now declares its
+`encoding` (`open`, `onoff`, `lights`) and a single `decode_binary_state`
+helper does the conversion. Same behavior as before, but adding a new
+binary field is now one line and the decoding is fully unit-tested.
+
+### HA 2026.8 compatibility
+The coordinator now passes `config_entry=entry` to `DataUpdateCoordinator.__init__`.
+The ContextVar-based fallback is deprecated and stops working in
+Home Assistant 2026.8.
+
+### Test coverage
+New `tests/test_coordinator.py` and `tests/test_config_flow.py` use
+`pytest-homeassistant-custom-component` to verify the reauth behavior end
+to end with a real `hass` instance. The existing offline tests cover the
+new `decode_binary_state`, `ApiError.status`, and the centralized
+`find_by_field` helper. Both suites run in CI on every push and PR. See
+[`tests/README.md`](tests/README.md) for how to run them locally.
+
+---
+
+## v0.4.0 — Data quality, hybrid coverage, non-blocking setup (2026-06-11)
+
+### Summary
+
+Addresses the open beta feedback at
+[issues #1–#6](https://github.com/TommiG1/HA_VAG-EU-Data-Act/issues): the
+integration now filters portal sentinel values (e.g. uint32-max mileage),
+discovers new entities as fields appear without a reload, sets up immediately
+without blocking on the first portal dataset, and adds curated entities for
+PHEV/hybrid vehicles like the Cupra Formentor.
+
+### Sentinel values are no longer recorded
+[issue #4](https://github.com/TommiG1/HA_VAG-EU-Data-Act/issues/4),
+[issue #6](https://github.com/TommiG1/HA_VAG-EU-Data-Act/issues/6)
+
+Some portal fields use out-of-band integer sentinels to mean "no reading"
+(`4294967295` mileage, `65535` charging time left, `-1` charging time). These
+spikes used to land in long-term history. They are now dropped before the
+sticky/last-known-value layer: the entity keeps showing the last good value
+instead of recording the garbage one.
+
+Filtered globally for all numeric fields:
+
+- `65535` (uint16 max)
+- `2147483647` (int32 max)
+- `4294967295` (uint32 max)
+
+Filtered for known fields where `-1` cannot be valid:
+
+- `remaining_charging_time` (flat) and `remaining_charging_time_*` (dotted)
+- `remaining_charging_time_target_soc`
+
+### New entities appear without a reload
+[issue #3](https://github.com/TommiG1/HA_VAG-EU-Data-Act/issues/3)
+
+The platform setup previously created entities **once** from the first
+dataset, so fields that appeared in later refreshes never got an entity
+without a reload. A coordinator listener now compares the present fields
+on every refresh and adds the missing curated/raw entities incrementally.
+
+### Non-blocking setup with status sensor
+[issue #1](https://github.com/TommiG1/HA_VAG-EU-Data-Act/issues/1)
+
+`async_setup_entry` no longer blocks on the first portal dataset. The entry
+loads immediately with a device that has a single diagnostic sensor:
+
+- **Integration status** — values: `starting`, `waiting_for_portal_data`,
+  `empty_snapshots`, `ok`. Attributes include `empty_snapshot_count` and
+  `latest_dataset_captured_at`.
+
+Dataset-derived entities appear via the discovery listener as soon as the
+first real ZIP is downloaded (typically 15–60 minutes after subscribing).
+
+### Cupra Formentor Hybrid / PHEV coverage
+[issue #2](https://github.com/TommiG1/HA_VAG-EU-Data-Act/issues/2)
+
+Flat-format PHEV vehicles previously landed in disabled raw diagnostics
+because the curated registry was BEV-focused. Added:
+
+| Field | Entity |
+|-------|--------|
+| `state_of_charge` | Battery (%) |
+| `remaining_charging_time` | Remaining charging time (min) |
+
+### Electric trip-statistics consumption
+[issue #5](https://github.com/TommiG1/HA_VAG-EU-Data-Act/issues/5)
+
+The dictionary lists `long_term_data_average_electr_engine_consumption` and
+its short-term sibling with unit `kwH/1000km`. New curated entities convert
+this to standard `kWh/100km` (mirrors the fuel-consumption transform):
+
+| Field | Entity |
+|-------|--------|
+| `long_term_data_average_electr_engine_consumption` | Avg electric consumption (long) |
+| `short_term_data_average_electr_engine_consumption` | Avg electric consumption (short) |
+
+### Technical changes
+
+- `data.is_sentinel(value, field_name)` and `entity.EudaEntity._filtered()`
+  share a single sentinel policy across curated and raw sensors
+- `coordinator.status_label` + `empty_snapshot_count` track what the diagnostic
+  sensor surfaces
+- `EudaCoordinator.async_add_listener` is now used by both platforms for
+  incremental entity discovery; format detection is pinned after the first
+  non-empty refresh
+- `electr_consumption_kwh_per_1000km_to_kwh_per_100km()` transform mirrors
+  the fuel-consumption one
+
+### Upgrade notes
+
+- Reload the integration or restart Home Assistant after updating
+- A new `Integration status` diagnostic sensor will appear on every vehicle
+- Previously-broken mileage history entries (uint32-max spikes) are still
+  in the recorder DB; they can be removed with the developer-tools state-history
+  cleanup if desired
+
+---
+
 ## v0.3.0 — ID.x sensors & clearer setup messages (2026-06-11)
 
 ### Summary

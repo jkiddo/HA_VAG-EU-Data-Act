@@ -245,18 +245,25 @@ class Dataset:
         )
 
     def by_field(self, field_name: str) -> DataPoint | None:
-        """Return a single data point for a (possibly duplicated) field name.
+        """Convenience wrapper for :func:`find_by_field` on this dataset."""
+        return find_by_field(self.points, field_name)
 
-        The portal merges several report snapshots into one flat array with no
-        ordering guarantee and no way to tell which value is "live", so a field
-        like ``charging_state_report.current_charge_state`` can appear several
-        times under different UUIDs with conflicting values. We pick the entry
-        with the smallest ``key`` (UUID): an arbitrary but *stable* choice, so a
-        curated sensor consistently tracks the same data point across refreshes
-        instead of flip-flopping when the portal reshuffles the array.
-        """
-        matches = [dp for dp in self.points.values() if dp.field_name == field_name]
-        return min(matches, key=lambda dp: dp.key) if matches else None
+
+def find_by_field(
+    points: dict[str, DataPoint], field_name: str
+) -> DataPoint | None:
+    """Return a single data point for a (possibly duplicated) field name.
+
+    The portal merges several report snapshots into one flat array with no
+    ordering guarantee and no way to tell which value is "live", so a field
+    like ``charging_state_report.current_charge_state`` can appear several
+    times under different UUIDs with conflicting values. We pick the entry
+    with the smallest ``key`` (UUID): an arbitrary but *stable* choice, so a
+    curated sensor consistently tracks the same data point across refreshes
+    instead of flip-flopping when the portal reshuffles the array.
+    """
+    matches = [dp for dp in points.values() if dp.field_name == field_name]
+    return min(matches, key=lambda dp: dp.key) if matches else None
 
 
 def _parse_timestamp(raw: str) -> datetime | None:
@@ -373,6 +380,70 @@ def deci_kwh_to_kwh(value) -> float | None:
         return None
 
 
+def electr_consumption_kwh_per_1000km_to_kwh_per_100km(value) -> float | None:
+    """Convert electric consumption from kWh/1000km to kWh/100km.
+
+    The dictionary types `long_term_data_average_electr_engine_consumption`
+    and friends as int with unit "kwH/1000km"; divide by 10 (mirrors the
+    fuel-consumption transform).
+    """
+    try:
+        return round(float(value) / 10, 1)
+    except (ValueError, TypeError):
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Sentinel values
+# ---------------------------------------------------------------------------
+#
+# The portal occasionally reports "no reading" using out-of-band integer
+# sentinels rather than omitting the field. These pollute long-term history
+# (e.g. mileage spike to 4 294 967 295 km, charging-time stuck at 65 535 min)
+# and must be filtered before the value reaches the sticky/HA layer.
+#
+# Numeric values are matched generously: int sentinels are also compared as
+# floats so float-typed fields with the same magnitude are caught.
+
+# Global integer sentinels: max-unsigned and max-signed for common widths.
+_GLOBAL_NUMERIC_SENTINELS: frozenset[float] = frozenset(
+    {
+        2**16 - 1,   # 65535  (uint16 max)
+        2**31 - 1,   # 2147483647 (int32 max)
+        2**32 - 1,   # 4294967295 (uint32 max)
+    }
+)
+
+# Field-specific extra sentinels: -1 ("not available") is too common as a
+# legitimate value (e.g. negative maintenance interval = overdue) to filter
+# globally, so it is only applied to fields where -1 cannot be valid.
+_FIELD_SENTINELS: dict[str, frozenset[float]] = {
+    "remaining_charging_time": frozenset({-1}),
+    "battery_state_report.remaining_charging_time_complete": frozenset({-1}),
+    "battery_state_report.remaining_charging_time_bulk": frozenset({-1}),
+    "remaining_charging_time_target_soc": frozenset({-1}),
+}
+
+
+def is_sentinel(value, field_name: str | None = None) -> bool:
+    """Return True if ``value`` is a portal sentinel for "no reading".
+
+    Booleans are never sentinels (``True``/``False`` are valid). Strings and
+    ``None`` are passed through unchanged.
+    """
+    if value is None or isinstance(value, bool):
+        return False
+    try:
+        as_float = float(value)
+    except (TypeError, ValueError):
+        return False
+    if as_float in _GLOBAL_NUMERIC_SENTINELS:
+        return True
+    if field_name and as_float in _FIELD_SENTINELS.get(field_name, frozenset()):
+        return True
+    return False
+
+
 # Named unit resolvers selectable per curated sensor via ``unit_resolver``.
 UNIT_RESOLVERS = {
     "distance": resolve_distance_unit,
@@ -406,6 +477,47 @@ class CuratedBinary:
     device_class: str | None = None
     invert: bool = False  # is_on = (value is False) when True
     icon: str | None = None
+    # How the field's integer value maps to on/off (see decode_binary_state).
+    # Default "open" matches the dominant 2/3 encoding for doors/windows/locks.
+    encoding: str = "open"
+
+
+def decode_binary_state(
+    value, encoding: str = "open", invert: bool = False
+) -> bool | None:
+    """Decode a curated binary field's raw value into on / off / unknown.
+
+    Vehicle status fields encode their boolean in several ways, selected per
+    sensor via ``CuratedBinary.encoding`` rather than guessed from the field
+    name at runtime:
+
+      "open"   - 0/1 = unsupported/invalid (-> unknown); 2 = active (open /
+                 locked / safe / …), 3 = inactive. The dominant encoding for
+                 doors, windows, sunroofs and lock/safe states.
+      "onoff"  - 0 = off, 1 = on (e.g. parking_brake).
+      "lights" - 0/1 = unsupported/invalid; 2 = off; 3/4/5 = on (parking_lights).
+
+    Plain booleans are returned as-is regardless of ``encoding``. ``invert``
+    flips a decoded True/False (a "lock" sensor reads on when *un*locked); it
+    never turns a known state into unknown. Returns ``None`` when the value is
+    missing or carries an unsupported/invalid sentinel.
+    """
+    if isinstance(value, bool):
+        result: bool | None = value
+    elif isinstance(value, int):
+        if encoding == "onoff":
+            result = value == 1
+        elif encoding == "lights":
+            result = None if value in (0, 1) else value in (3, 4, 5)
+        elif value in (0, 1):
+            result = None  # unsupported / invalid sentinel
+        else:  # "open": 2 = active, 3 = inactive
+            result = value == 2
+    else:
+        result = None
+    if result is None:
+        return None
+    return (not result) if invert else result
 
 
 # ---------------------------------------------------------------------------
@@ -668,7 +780,13 @@ CURATED_BINARY_DOTTED: tuple[CuratedBinary, ...] = (
     CuratedBinary("locked", "Vehicle locked", "lock", invert=True, icon="mdi:car-key"),
     # ID.x datasets carry a flat-named parking_brake field even though most of
     # their fields are dotted, so it belongs in the dotted group too.
-    CuratedBinary("parking_brake", "Parking brake", None, icon="mdi:car-brake-parking"),
+    CuratedBinary(
+        "parking_brake",
+        "Parking brake",
+        None,
+        icon="mdi:car-brake-parking",
+        encoding="onoff",
+    ),
     # === Parking Lights ===
     CuratedBinary(
         "parking_light_left", "Parking light left", "light", icon="mdi:car-parking-lights"
@@ -789,6 +907,22 @@ CURATED_SENSORS_FLAT: tuple[CuratedSensor, ...] = (
         "measurement",
         icon="mdi:map-marker-distance",
         suggested_display_precision=0,
+    ),
+    # === Battery (PHEV / hybrid: flat field) ===
+    CuratedSensor(
+        "state_of_charge",
+        "Battery",
+        "battery",
+        "%",
+        "measurement",
+    ),
+    CuratedSensor(
+        "remaining_charging_time",
+        "Remaining charging time",
+        "duration",
+        "min",
+        "measurement",
+        icon="mdi:battery-clock",
     ),
     # === Fuel ===
     CuratedSensor(
@@ -1041,6 +1175,16 @@ CURATED_SENSORS_FLAT: tuple[CuratedSensor, ...] = (
         suggested_display_precision=1,
     ),
     CuratedSensor(
+        "long_term_data_average_electr_engine_consumption",
+        "Avg electric consumption (long)",
+        None,
+        "kWh/100km",
+        "measurement",
+        icon="mdi:lightning-bolt",
+        transform="electr_consumption",
+        suggested_display_precision=1,
+    ),
+    CuratedSensor(
         "long_term_data_average_speed",
         "Avg speed (long)",
         None,
@@ -1083,6 +1227,16 @@ CURATED_SENSORS_FLAT: tuple[CuratedSensor, ...] = (
         "measurement",
         icon="mdi:gas-station",
         transform="fuel_consumption",
+        suggested_display_precision=1,
+    ),
+    CuratedSensor(
+        "short_term_data_average_electr_engine_consumption",
+        "Avg electric consumption (short)",
+        None,
+        "kWh/100km",
+        "measurement",
+        icon="mdi:lightning-bolt",
+        transform="electr_consumption",
         suggested_display_precision=1,
     ),
     CuratedSensor(
@@ -1265,9 +1419,19 @@ CURATED_BINARY_FLAT: tuple[CuratedBinary, ...] = (
         icon="mdi:car-convertible",
     ),
     # === Other Binary States ===
-    CuratedBinary("parking_brake", "Parking brake", None, icon="mdi:car-brake-parking"),
     CuratedBinary(
-        "parking_lights", "Parking lights", "light", icon="mdi:car-parking-lights"
+        "parking_brake",
+        "Parking brake",
+        None,
+        icon="mdi:car-brake-parking",
+        encoding="onoff",
+    ),
+    CuratedBinary(
+        "parking_lights",
+        "Parking lights",
+        "light",
+        icon="mdi:car-parking-lights",
+        encoding="lights",
     ),
     CuratedBinary("state_of_hood", "Hood state", None, icon="mdi:car"),
     CuratedBinary("state_service_hatch", "Service hatch", None, icon="mdi:gas-station"),

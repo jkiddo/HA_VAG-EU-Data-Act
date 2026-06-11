@@ -8,7 +8,7 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import EudaConfigEntry
@@ -23,7 +23,9 @@ from .data import (
     CuratedSensor,
     DataPoint,
     detect_dataset_format,
+    find_by_field,
     friendly_name,
+    is_sentinel,
     resolve_distance_unit,
 )
 from .entity import EudaEntity
@@ -35,53 +37,66 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data.coordinator
-    points: dict[str, DataPoint] = coordinator.data or {}
-    present_fields = {dp.field_name for dp in points.values()}
 
-    # Detect dataset format and select appropriate curated group
-    format_type = detect_dataset_format(points)
-    curated_sensors = (
-        CURATED_SENSORS_DOTTED if format_type == "dotted" else CURATED_SENSORS_FLAT
-    )
-    curated_binary = (
-        CURATED_BINARY_DOTTED if format_type == "dotted" else CURATED_BINARY_FLAT
-    )
+    # Status sensor is always present, even before the first dataset arrives,
+    # so the user sees a device with a state explaining what's happening.
+    async_add_entities([EudaStatusSensor(coordinator)])
 
-    # Build field sets for exclusion from raw sensors
-    binary_fields = {b.field_name for b in curated_binary}
-    curated_sensor_fields = {s.field_name for s in curated_sensors}
+    added_curated: set[str] = set()
+    added_raw_keys: set[str] = set()
+    # Pin the detected format after the first non-empty refresh; later
+    # datasets that mix formats won't flip the chosen registry.
+    format_state: dict[str, str | None] = {"format": None}
 
-    entities: list[SensorEntity] = []
+    @callback
+    def _discover() -> None:
+        points: dict[str, DataPoint] = coordinator.data or {}
+        if not points:
+            return
 
-    # curated numeric / text sensors (one per field, if present)
-    for curated in curated_sensors:
-        # Special handling for timestamp sensors (e.g., "mileage.timestamp" or "mileage.value.timestamp")
-        if ".timestamp" in curated.field_name:
-            base_field = curated.field_name.replace(".timestamp", "")
-            if base_field in present_fields:
-                entities.append(EudaCuratedSensor(coordinator, curated))
-        elif curated.field_name in present_fields:
-            entities.append(EudaCuratedSensor(coordinator, curated))
+        if format_state["format"] is None:
+            format_state["format"] = detect_dataset_format(points)
+        format_type = format_state["format"]
 
-    # raw diagnostic sensors: every other unique key
-    for key, dp in points.items():
-        if dp.field_name in curated_sensor_fields or dp.field_name in binary_fields:
-            continue
-        entities.append(EudaRawSensor(coordinator, key))
+        curated_sensors = (
+            CURATED_SENSORS_DOTTED if format_type == "dotted" else CURATED_SENSORS_FLAT
+        )
+        curated_binary = (
+            CURATED_BINARY_DOTTED if format_type == "dotted" else CURATED_BINARY_FLAT
+        )
+        binary_fields = {b.field_name for b in curated_binary}
+        curated_sensor_fields = {s.field_name for s in curated_sensors}
+        present_fields = {dp.field_name for dp in points.values()}
 
-    async_add_entities(entities)
+        new_entities: list[SensorEntity] = []
 
+        for curated in curated_sensors:
+            if curated.field_name in added_curated:
+                continue
+            # Timestamp sensors track ".timestamp" on a base field (e.g.
+            # mileage.value.timestamp). They appear once the base field arrives.
+            if ".timestamp" in curated.field_name:
+                base_field = curated.field_name.replace(".timestamp", "")
+                if base_field in present_fields:
+                    new_entities.append(EudaCuratedSensor(coordinator, curated))
+                    added_curated.add(curated.field_name)
+            elif curated.field_name in present_fields:
+                new_entities.append(EudaCuratedSensor(coordinator, curated))
+                added_curated.add(curated.field_name)
 
-def _find_by_field(points: dict[str, DataPoint], field_name: str) -> DataPoint | None:
-    """Pick a single point for a (possibly duplicated) field name.
+        for key, dp in points.items():
+            if key in added_raw_keys:
+                continue
+            if dp.field_name in curated_sensor_fields or dp.field_name in binary_fields:
+                continue
+            new_entities.append(EudaRawSensor(coordinator, key))
+            added_raw_keys.add(key)
 
-    The portal's flat array is unordered and a field can appear multiple times
-    under different UUIDs with conflicting values, with no way to tell which is
-    "live". Select the smallest UUID: arbitrary but stable, so the sensor tracks
-    the same data point across refreshes instead of flip-flopping on reshuffle.
-    """
-    matches = [dp for dp in points.values() if dp.field_name == field_name]
-    return min(matches, key=lambda dp: dp.key) if matches else None
+        if new_entities:
+            async_add_entities(new_entities)
+
+    _discover()
+    entry.async_on_unload(coordinator.async_add_listener(_discover))
 
 
 class EudaCuratedSensor(EudaEntity, SensorEntity):
@@ -124,14 +139,21 @@ class EudaCuratedSensor(EudaEntity, SensorEntity):
         # Special handling for timestamp fields (both "mileage.timestamp" and "mileage.value.timestamp")
         if ".timestamp" in self._curated.field_name:
             base_field = self._curated.field_name.replace(".timestamp", "")
-            dp = _find_by_field(self.coordinator.data or {}, base_field)
+            dp = find_by_field(self.coordinator.data or {}, base_field)
             if dp and dp.timestamp:
                 return self._sticky(dp.timestamp)
             return self._sticky(None)
 
-        dp = _find_by_field(self.coordinator.data or {}, self._curated.field_name)
+        field_name = self._curated.field_name
+        dp = find_by_field(self.coordinator.data or {}, field_name)
 
         if not dp:
+            return self._sticky(None)
+
+        # Sentinels are filtered against the raw portal value (before
+        # transforms) so e.g. fuel-consumption /10 doesn't turn 4294967295
+        # into a "plausible" 429496729.5.
+        if is_sentinel(dp.value, field_name):
             return self._sticky(None)
 
         raw_value = dp.value
@@ -156,6 +178,14 @@ class EudaCuratedSensor(EudaEntity, SensorEntity):
                 transformed = fuel_consumption_l_per_1000km_to_l_per_100km(raw_value)
                 return self._sticky(transformed)
 
+            elif self._curated.transform == "electr_consumption":
+                from .data import electr_consumption_kwh_per_1000km_to_kwh_per_100km
+
+                transformed = electr_consumption_kwh_per_1000km_to_kwh_per_100km(
+                    raw_value
+                )
+                return self._sticky(transformed)
+
             elif self._curated.transform == "deci_kwh":
                 from .data import deci_kwh_to_kwh
 
@@ -171,7 +201,7 @@ class EudaCuratedSensor(EudaEntity, SensorEntity):
         # otherwise use the static curated unit.
         cur = self._curated
         if cur.unit_field:
-            dp = _find_by_field(self.coordinator.data or {}, cur.unit_field)
+            dp = find_by_field(self.coordinator.data or {}, cur.unit_field)
             if dp is not None:
                 resolver = UNIT_RESOLVERS.get(cur.unit_resolver, resolve_distance_unit)
                 resolved = resolver(dp.value)
@@ -205,7 +235,9 @@ class EudaRawSensor(EudaEntity, SensorEntity):
     @property
     def native_value(self):
         dp = (self.coordinator.data or {}).get(self._key)
-        return self._sticky(dp.value if dp else None)
+        if not dp:
+            return self._sticky(None)
+        return self._filtered(dp.value, dp.field_name)
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -217,4 +249,40 @@ class EudaRawSensor(EudaEntity, SensorEntity):
             attrs["description"] = dp.description
         if dp.cluster:
             attrs["cluster"] = dp.cluster
+        return attrs
+
+
+class EudaStatusSensor(EudaEntity, SensorEntity):
+    """Always-present diagnostic sensor showing the integration's portal state.
+
+    Created at setup so the device exists in HA even before the first dataset
+    arrives, with a state that tells the user why their other entities haven't
+    appeared yet.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:cloud-sync-outline"
+
+    def __init__(self, coordinator: EudaCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.vin}_integration_status"
+        self._attr_name = "Integration status"
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    @property
+    def native_value(self) -> str | None:
+        return self.coordinator.status_label
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        attrs: dict = {
+            "empty_snapshot_count": self.coordinator.empty_snapshot_count,
+        }
+        if self.coordinator.latest_dataset and self.coordinator.latest_dataset.captured_at:
+            attrs["latest_dataset_captured_at"] = (
+                self.coordinator.latest_dataset.captured_at.isoformat()
+            )
         return attrs
