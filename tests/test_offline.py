@@ -271,6 +271,48 @@ def main() -> int:
     check("string -> None", data.decode_binary_state("OFF"), None)
     check("None -> None", data.decode_binary_state(None), None)
 
+    # --- enum label shortening -------------------------------------------
+    print("enum label shortening:")
+    check(
+        "charge state prefix stripped",
+        data.shorten_enum_label(
+            "charging_state_report.current_charge_state",
+            "CHARGE_STATE_CHARGING_HV_BATTERY",
+        ),
+        "CHARGING_HV_BATTERY",
+    )
+    check(
+        "non-enum passthrough",
+        data.shorten_enum_label("mileage.value", "12345"),
+        "12345",
+    )
+    check(
+        "already short label unchanged",
+        data.shorten_enum_label("charge_mode", "CHARGE_MODE_INVALID"),
+        "CHARGE_MODE_INVALID",
+    )
+
+    # --- latest captured time --------------------------------------------
+    print("latest captured time:")
+    from datetime import datetime, timezone
+
+    ts_old = datetime(2026, 1, 1, 10, 0, tzinfo=timezone.utc)
+    ts_new = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
+    points = {
+        "a": data.DataPoint(
+            key="a",
+            field_name="car_captured_time",
+            raw_value=ts_old.isoformat(),
+        ),
+        "b": data.DataPoint(
+            key="b",
+            field_name="profile_state_report.car_captured_time",
+            raw_value=ts_new.isoformat(),
+        ),
+    }
+    check("max across captured fields", data.latest_captured_time(points), ts_new)
+    check("empty dataset", data.latest_captured_time({}), None)
+
     # --- ApiError carries HTTP status ------------------------------------
     print("api error status:")
     err500 = api.ApiError("GET x -> HTTP 500", status=500)

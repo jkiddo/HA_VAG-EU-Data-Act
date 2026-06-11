@@ -28,7 +28,9 @@ from .data import (
     find_by_field,
     friendly_name,
     is_sentinel,
+    latest_captured_time,
     resolve_distance_unit,
+    shorten_enum_label,
     total_charged_energy_kwh,
 )
 from .entity import EudaEntity
@@ -48,6 +50,8 @@ async def async_setup_entry(
             EudaStatusSensor(coordinator),
             EudaDaysUntilSubscriptionExpiresSensor(coordinator),
             EudaMinutesSinceLastSnapshotSensor(coordinator),
+            EudaLastVehicleUpdateSensor(coordinator),
+            EudaDatasetGeneratedSensor(coordinator),
             EudaUncuratedFieldsCountSensor(coordinator),
         ]
     )
@@ -92,7 +96,8 @@ async def async_setup_entry(
             # mileage.value.timestamp). They appear once the base field arrives.
             if ".timestamp" in curated.field_name:
                 base_field = curated.field_name.replace(".timestamp", "")
-                if base_field in present_fields:
+                base_dp = find_by_field(points, base_field)
+                if base_dp is not None and base_dp.timestamp is not None:
                     new_entities.append(EudaCuratedSensor(coordinator, curated))
                     added_curated.add(curated.field_name)
             elif curated.field_name in present_fields:
@@ -230,6 +235,12 @@ class EudaCuratedSensor(EudaEntity, SensorEntity):
                 transformed = parse_timestamp(raw_value)
                 return self._sticky(transformed)
 
+        if self._curated.translation_key:
+            return self._sticky(raw_value)
+        if isinstance(raw_value, str):
+            return self._sticky(
+                shorten_enum_label(self._curated.field_name, raw_value)
+            )
         return self._sticky(raw_value)
 
     @property
@@ -275,7 +286,10 @@ class EudaRawSensor(EudaEntity, SensorEntity):
         dp = (self.coordinator.data or {}).get(self._key)
         if not dp:
             return self._sticky(None)
-        return self._filtered(dp.value, dp.field_name)
+        value = self._filtered(dp.value, dp.field_name)
+        if isinstance(value, str):
+            return shorten_enum_label(dp.field_name, value)
+        return value
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -391,6 +405,52 @@ class EudaMinutesSinceLastSnapshotSensor(EudaEntity, SensorEntity):
         if snap := self.coordinator.last_snapshot_at:
             attrs["last_snapshot_at"] = snap.isoformat()
         return attrs
+
+
+class EudaLastVehicleUpdateSensor(EudaEntity, SensorEntity):
+    """When the vehicle itself last reported data to the backend.
+
+    Distinct from entity ``last_updated`` (portal poll time) and from
+    ``dataset_generated`` (when the portal ZIP was created).
+    """
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:car-clock"
+    _attr_translation_key = "last_vehicle_update"
+
+    def __init__(self, coordinator: EudaCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.vin}_last_vehicle_update"
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    @property
+    def native_value(self):
+        return self._sticky(latest_captured_time(self.coordinator.data or {}))
+
+
+class EudaDatasetGeneratedSensor(EudaEntity, SensorEntity):
+    """When the portal generated the currently loaded dataset ZIP."""
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:database-clock"
+    _attr_translation_key = "dataset_generated"
+
+    def __init__(self, coordinator: EudaCoordinator) -> None:
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.vin}_dataset_generated"
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    @property
+    def native_value(self):
+        return self._sticky(self.coordinator.dataset_created_at)
 
 
 class EudaUncuratedFieldsCountSensor(EudaEntity, SensorEntity):

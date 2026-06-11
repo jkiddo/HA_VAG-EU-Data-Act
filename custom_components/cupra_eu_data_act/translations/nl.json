@@ -334,6 +334,12 @@
       "minutes_since_last_snapshot": {
         "name": "Minuten sinds laatste snapshot"
       },
+      "last_vehicle_update": {
+        "name": "Laatste voertuigupdate"
+      },
+      "dataset_generated": {
+        "name": "Dataset gegenereerd"
+      },
       "uncurated_fields_count": {
         "name": "Niet-gecureerde velden"
       },

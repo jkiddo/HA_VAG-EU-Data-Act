@@ -1,5 +1,37 @@
 # Release notes
 
+## v0.6.4 — Data freshness sensors & readable enum labels (2026-06-11)
+
+### Summary
+
+Clearer enum display, stricter timestamp sensor creation, and two diagnostic
+sensors that separate vehicle freshness from portal delivery time.
+
+### Readable enum values
+
+Long VW enum strings (e.g. `CHARGE_STATE_CHARGING_HV_BATTERY`) are shortened for
+display on raw diagnostic sensors and curated text fields without a dedicated
+`translation_key`. Curated enum sensors with existing state translations are
+unchanged.
+
+### Data freshness diagnostics
+
+| Entity | Purpose |
+|--------|---------|
+| `last_vehicle_update` | When the vehicle last reported to the backend (`car_captured_time` and variants) |
+| `dataset_generated` | When the portal generated the currently loaded dataset ZIP |
+
+`minutes_since_last_snapshot` and `last_snapshot_at` now consider all captured-time
+field variants, not only flat `car_captured_time`.
+
+### Timestamp curated sensors
+
+`.timestamp` curated entities are created only when the base field carries a
+real `timestampUtc` value — avoids forever-unknown sensors on datasets that
+list the field name but omit the timestamp.
+
+---
+
 ## v0.6.3 — Localization, health, energy & Lovelace hints (2026-06-11)
 
 ### Summary

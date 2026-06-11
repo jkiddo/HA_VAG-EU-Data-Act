@@ -25,7 +25,7 @@ from .const import (
     RETRY_INTERVAL,
     SUBSCRIPTION_VALIDITY,
 )
-from .data import Dataset, DataPoint, find_by_field, parse_timestamp
+from .data import Dataset, DataPoint, latest_captured_time
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -109,6 +109,8 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
         self.listing_identifier: str | None = entry.data.get(CONF_IDENTIFIER)
         # Newest createdOn among content (non-empty) listing entries.
         self.last_listing_content_at: datetime | None = None
+        # When the portal generated the currently loaded dataset ZIP.
+        self.dataset_created_at: datetime | None = None
 
     @property
     def last_snapshot_at(self) -> datetime | None:
@@ -118,10 +120,8 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
             candidates.append(self.last_listing_content_at)
         if self.latest_dataset and self.latest_dataset.captured_at is not None:
             candidates.append(self.latest_dataset.captured_at)
-        dp = find_by_field(self.data or {}, "car_captured_time")
-        if dp is not None:
-            if ts := parse_timestamp(dp.raw_value):
-                candidates.append(ts)
+        if ts := latest_captured_time(self.data or {}):
+            candidates.append(ts)
         return max(candidates) if candidates else None
 
     @property
@@ -242,6 +242,9 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
                         self.vin, self.identifier, dataset_entry["name"]
                     )
                     self.latest_dataset = Dataset.from_json(payload)
+                    self.dataset_created_at = (
+                        _created_on(dataset_entry) or self.dataset_created_at
+                    )
                     self._is_initial_setup = False
                     last_error = None
                     break  # Success!

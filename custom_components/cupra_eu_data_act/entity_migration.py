@@ -32,6 +32,8 @@ def translation_key_for_unique_id(unique_id: str, vin: str) -> str | None:
     for suffix, key in (
         ("days_until_subscription_expires", "days_until_subscription_expires"),
         ("minutes_since_last_snapshot", "minutes_since_last_snapshot"),
+        ("last_vehicle_update", "last_vehicle_update"),
+        ("dataset_generated", "dataset_generated"),
         ("uncurated_fields_count", "uncurated_fields_count"),
     ):
         if unique_id == f"{vin}_{suffix}":

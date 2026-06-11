@@ -334,6 +334,12 @@
       "minutes_since_last_snapshot": {
         "name": "Minutes depuis le dernier instantané"
       },
+      "last_vehicle_update": {
+        "name": "Dernière mise à jour véhicule"
+      },
+      "dataset_generated": {
+        "name": "Jeu de données généré"
+      },
       "uncurated_fields_count": {
         "name": "Champs non traités"
       },

@@ -152,6 +152,50 @@ def enum_members(description: str | None) -> list[str]:
     return members if len(members) >= 2 else []
 
 
+def shorten_enum_label(field_name: str, value):
+    """Shorten verbose VW enum labels for display.
+
+    Removes repeated enum prefixes that are already implied by the field name,
+    e.g. ``charging_state_report.current_charge_state`` +
+    ``CHARGE_STATE_CHARGING_HV_BATTERY`` -> ``CHARGING_HV_BATTERY``.
+    Only ALLCAPS strings are touched; anything else passes through unchanged.
+    """
+    if not isinstance(value, str) or not re.fullmatch(r"[A-Z0-9_]+", value):
+        return value
+
+    def normalize(text: str) -> str:
+        return re.sub(r"[^A-Za-z0-9]+", "_", text).strip("_").upper()
+
+    candidates: list[str] = []
+
+    def add_candidate(text: str) -> None:
+        normalized = normalize(text)
+        if normalized and normalized not in candidates:
+            candidates.append(normalized)
+
+    field_name = field_name or ""
+    add_candidate(field_name)
+    for part in field_name.split("."):
+        add_candidate(part)
+
+    normalized_field = normalize(field_name)
+    for removable in ("SETTINGS_", "STATUS_", "CHARGING_STATE_REPORT_"):
+        if normalized_field.startswith(removable):
+            add_candidate(normalized_field.removeprefix(removable))
+
+    for candidate in list(candidates):
+        tokens = candidate.split("_")
+        for i in range(1, len(tokens)):
+            add_candidate("_".join(tokens[i:]))
+
+    for prefix in sorted(candidates, key=len, reverse=True):
+        full_prefix = f"{prefix}_"
+        if value.startswith(full_prefix) and len(value) > len(full_prefix):
+            return value[len(full_prefix) :]
+
+    return value
+
+
 def friendly_name(field_name: str, description: str | None = None) -> str:
     """Entity name for a raw data point.
 
@@ -233,9 +277,8 @@ class Dataset:
                 timestamp_utc=item.get("timestampUtc") or None,
             )
             points[key] = dp
-            if field_name == "car_captured_time":
-                ts = _parse_timestamp(dp.raw_value)
-                if ts:
+            if field_name.rsplit(".", 1)[-1] in _CAPTURED_TIME_SUFFIXES:
+                if ts := _parse_timestamp(dp.raw_value):
                     captured.append(ts)
         return cls(
             vin=payload.get("vin", ""),
@@ -264,6 +307,28 @@ def find_by_field(
     """
     matches = [dp for dp in points.values() if dp.field_name == field_name]
     return min(matches, key=lambda dp: dp.key) if matches else None
+
+
+# Field suffixes that carry when the vehicle last reported to the backend.
+_CAPTURED_TIME_SUFFIXES = frozenset(
+    {"car_captured_time", "car_captured_utc_timestamp"}
+)
+
+
+def latest_captured_time(points: dict[str, "DataPoint"]) -> datetime | None:
+    """Newest car-to-backend timestamp across all report snapshots in a dataset.
+
+    The portal merges several report snapshots into one payload, each with its
+    own captured time. The maximum is when the vehicle itself was last heard
+    from — distinct from when the portal generated the ZIP file.
+    """
+    times = [
+        ts
+        for dp in points.values()
+        if dp.field_name.rsplit(".", 1)[-1] in _CAPTURED_TIME_SUFFIXES
+        and (ts := parse_timestamp(dp.raw_value))
+    ]
+    return max(times) if times else None
 
 
 def parse_timestamp(raw) -> datetime | None:
