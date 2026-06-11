@@ -287,8 +287,13 @@ def main() -> int:
         "12345",
     )
     check(
-        "already short label unchanged",
+        "charge mode prefix shortened",
         data.shorten_enum_label("charge_mode", "CHARGE_MODE_INVALID"),
+        "INVALID",
+    )
+    check(
+        "no matching prefix unchanged",
+        data.shorten_enum_label("battery_state_report.soc", "CHARGE_MODE_INVALID"),
         "CHARGE_MODE_INVALID",
     )
 
