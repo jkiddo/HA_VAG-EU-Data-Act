@@ -35,5 +35,16 @@
       "auth": "Authentifizierung fehlgeschlagen; Integration bitte neu hinzufügen.",
       "reauth_successful": "Erneute Anmeldung erfolgreich."
     }
+  },
+  "exceptions": {
+    "waiting_for_portal_data": {
+      "message": "Anmeldung erfolgreich — es wird auf die erste Fahrzeugdaten-Lieferung vom EU-Data-Act-Portal gewartet. Das ist direkt nach der Einrichtung normal und kein Anmeldefehler.\n\nBitte auf dem Portal ({portal_url}) prüfen:\n• Eine kontinuierliche 15-Minuten-Datenanfrage ist für dieses Fahrzeug aktiv\n• Das Fahrzeug ist unter Data clusters → Vehicle overview verknüpft\n• Das Auto war kürzlich online (Zündung an oder Kontakt über die App)\n\nErste echte Daten kommen oft innerhalb von 15–60 Minuten, manchmal erst einige Stunden nach Aktivierung der Anfrage. Leere _no_content_found-Schnappschüsse sind normal, wenn das Auto in einem 15-Minuten-Fenster keine Telemetrie gesendet hat; sie werden automatisch übersprungen.\n\nHome Assistant versucht es alle {retry_minutes} Minute(n) erneut. Die Integration muss nicht entfernt und neu hinzugefügt werden."
+    },
+    "waiting_for_portal_data_empty_snapshots": {
+      "message": "Anmeldung erfolgreich — die Portal-Anfrage ist aktiv, bisher kamen aber nur leere Schnappschüsse ({empty_count} × _no_content_found). Das Fahrzeug hat in diesen 15-Minuten-Fenstern noch keine Telemetrie gesendet.\n\nDas ist kein Home-Assistant- oder Anmeldefehler. Auf dem Portal ({portal_url}) die kontinuierliche 15-Minuten-Anfrage für diese VIN prüfen und das Auto aktivieren (fahren, Zündung oder App öffnen), damit es Daten hochladen kann.\n\nIm nächsten Intervall können echte Werte kommen. Home Assistant versucht es alle {retry_minutes} Minute(n) erneut — die Integration nicht entfernen."
+    },
+    "delivery_not_ready": {
+      "message": "Anmeldung erfolgreich — die Datenlieferung ist noch nicht bereit (HTTP 400). Wenn die kontinuierliche 15-Minuten-Anfrage auf dem Portal ({portal_url}) gerade erst erstellt wurde, kann es einige Stunden dauern, bis ZIP-Dateien geliefert werden.\n\nHome Assistant versucht es alle {retry_minutes} Minute(n) erneut. Das ist kein Zugangsdaten-Problem."
+    }
   }
 }

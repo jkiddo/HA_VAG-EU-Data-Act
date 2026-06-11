@@ -156,6 +156,12 @@ class EudaCuratedSensor(EudaEntity, SensorEntity):
                 transformed = fuel_consumption_l_per_1000km_to_l_per_100km(raw_value)
                 return self._sticky(transformed)
 
+            elif self._curated.transform == "deci_kwh":
+                from .data import deci_kwh_to_kwh
+
+                transformed = deci_kwh_to_kwh(raw_value)
+                return self._sticky(transformed)
+
         return self._sticky(raw_value)
 
     @property
@@ -189,7 +195,11 @@ class EudaRawSensor(EudaEntity, SensorEntity):
         self._attr_unique_id = raw_unique_id(coordinator.vin, key)
         self._attr_name = friendly_name(dp.field_name, dp.description)
         # only attach a unit when the value is numeric
-        if dp.unit and dp.type_hint in ("int", "float"):
+        if dp.field_name == "value_of_the_primary_range":
+            self._attr_native_unit_of_measurement = "km"
+            self._attr_device_class = SensorDeviceClass.DISTANCE
+            self._attr_state_class = SensorStateClass.MEASUREMENT
+        elif dp.unit and dp.type_hint in ("int", "float"):
             self._attr_native_unit_of_measurement = dp.unit
 
     @property

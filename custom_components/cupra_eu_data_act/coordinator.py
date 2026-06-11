@@ -13,6 +13,7 @@ from homeassistant.util import dt as dt_util
 
 from .api import ApiError, AuthError, EudaApiClient
 from .const import (
+    BASE_URL,
     CONF_IDENTIFIER,
     CONF_VIN,
     DATASET_INTERVAL,
@@ -25,6 +26,20 @@ from .const import (
 from .data import Dataset, DataPoint
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class EudaUpdateNotReady(UpdateFailed):
+    """UpdateFailed that maps to a translated ConfigEntryNotReady message."""
+
+    def __init__(
+        self,
+        translation_key: str,
+        *,
+        translation_placeholders: dict[str, str] | None = None,
+    ) -> None:
+        super().__init__(translation_key)
+        self.translation_key = translation_key
+        self.translation_placeholders = translation_placeholders or {}
 
 
 def _filename_timestamp(name: str) -> datetime | None:
@@ -116,10 +131,21 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
                     "No datasets available on first load, will retry in %s",
                     RETRY_INTERVAL,
                 )
-            raise UpdateFailed(
-                "Waiting for first data delivery from the portal. After enabling "
-                "the continuous 15-minute request this can take one or more "
-                "intervals; the integration will keep retrying."
+            if empty_only:
+                raise EudaUpdateNotReady(
+                    "waiting_for_portal_data_empty_snapshots",
+                    translation_placeholders={
+                        "portal_url": BASE_URL,
+                        "empty_count": str(len(empty_only)),
+                        "retry_minutes": str(int(RETRY_INTERVAL.total_seconds() // 60)),
+                    },
+                )
+            raise EudaUpdateNotReady(
+                "waiting_for_portal_data",
+                translation_placeholders={
+                    "portal_url": BASE_URL,
+                    "retry_minutes": str(int(RETRY_INTERVAL.total_seconds() // 60)),
+                },
             )
 
         # Try to load datasets, starting with newest and falling back to older ones
@@ -279,10 +305,14 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
 
                 # HTTP 400 special case
                 if "HTTP 400" in str(last_error):
-                    raise UpdateFailed(
-                        "Data delivery not ready yet (HTTP 400). If you just enabled "
-                        "the continuous data request on the portal, it can take a few "
-                        "hours to start; will keep retrying."
+                    raise EudaUpdateNotReady(
+                        "delivery_not_ready",
+                        translation_placeholders={
+                            "portal_url": BASE_URL,
+                            "retry_minutes": str(
+                                int(RETRY_INTERVAL.total_seconds() // 60)
+                            ),
+                        },
                     ) from last_error
 
                 # Server errors with existing data - return empty to keep old data

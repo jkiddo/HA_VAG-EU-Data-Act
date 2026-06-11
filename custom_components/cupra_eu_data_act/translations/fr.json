@@ -1,0 +1,50 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "VW Group EU Data Act",
+        "description": "Sélectionnez la marque de votre véhicule et connectez-vous avec les mêmes identifiants que sur le portail EU Data Act.",
+        "data": {
+          "brand": "Marque",
+          "email": "E-mail",
+          "password": "Mot de passe"
+        }
+      },
+      "vehicle": {
+        "title": "Sélectionner le véhicule",
+        "data": {
+          "vin": "Véhicule"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Se réauthentifier",
+        "description": "Saisissez le mot de passe pour {email} ({brand}).",
+        "data": {
+          "password": "Mot de passe"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "E-mail ou mot de passe invalide pour la marque sélectionnée.",
+      "cannot_connect": "Impossible de se connecter au portail EU Data Act.",
+      "no_vehicles": "Aucun véhicule trouvé pour ce compte.",
+      "unknown": "Une erreur inattendue s'est produite."
+    },
+    "abort": {
+      "already_configured": "Ce véhicule est déjà configuré.",
+      "auth": "Échec de l'authentification ; veuillez réajouter l'intégration.",
+      "reauth_successful": "Réauthentification réussie."
+    }
+  },
+  "exceptions": {
+    "waiting_for_portal_data": {
+      "message": "Connexion réussie — en attente de la première livraison de données du véhicule depuis le portail EU Data Act. C'est normal juste après la configuration et ce n'est pas une erreur de connexion.\n\nSur le portail ({portal_url}), veuillez vérifier :\n• Une demande de données continue de 15 minutes est active pour ce véhicule\n• Le véhicule est lié sous Data clusters → Vehicle overview\n• La voiture a été en ligne récemment (contact allumage ou application mobile)\n\nLes premières données réelles arrivent souvent sous 15 à 60 minutes, parfois quelques heures après l'activation de la demande. Les instantanés vides _no_content_found sont normaux lorsque la voiture n'a envoyé aucune télémétrie dans une fenêtre de 15 minutes ; ils sont ignorés automatiquement.\n\nHome Assistant réessaie toutes les {retry_minutes} minute(s). Il n'est pas nécessaire de supprimer et de réajouter l'intégration."
+    },
+    "waiting_for_portal_data_empty_snapshots": {
+      "message": "Connexion réussie — l'abonnement au portail est actif, mais seuls des instantanés vides ont été reçus jusqu'à présent ({empty_count} × _no_content_found). Le véhicule n'a encore envoyé aucune télémétrie dans ces fenêtres de 15 minutes.\n\nCe n'est pas une erreur Home Assistant ni de connexion. Sur le portail ({portal_url}), confirmez que la demande continue de 15 minutes est activée pour ce VIN et réveillez la voiture (conduire, contact allumé ou ouvrir l'application mobile) pour qu'elle puisse envoyer des données.\n\nLe prochain intervalle peut contenir de vraies valeurs. Home Assistant réessaie toutes les {retry_minutes} minute(s) — inutile de supprimer l'intégration."
+    },
+    "delivery_not_ready": {
+      "message": "Connexion réussie — la livraison des données n'est pas encore prête (HTTP 400). Si vous venez de créer la demande continue de 15 minutes sur le portail ({portal_url}), le backend peut mettre quelques heures avant de commencer à livrer des fichiers ZIP.\n\nHome Assistant réessaie toutes les {retry_minutes} minute(s). Ce n'est pas un problème d'identifiants."
+    }
+  }
+}

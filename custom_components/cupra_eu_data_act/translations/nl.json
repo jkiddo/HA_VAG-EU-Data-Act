@@ -1,0 +1,50 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "VW Group EU Data Act",
+        "description": "Selecteer je automerk en meld je aan met dezelfde inloggegevens als op het EU Data Act-portaal.",
+        "data": {
+          "brand": "Merk",
+          "email": "E-mail",
+          "password": "Wachtwoord"
+        }
+      },
+      "vehicle": {
+        "title": "Voertuig selecteren",
+        "data": {
+          "vin": "Voertuig"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Opnieuw aanmelden",
+        "description": "Voer het wachtwoord in voor {email} ({brand}).",
+        "data": {
+          "password": "Wachtwoord"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Ongeldig e-mailadres of wachtwoord voor het geselecteerde merk.",
+      "cannot_connect": "Kan geen verbinding maken met het EU Data Act-portaal.",
+      "no_vehicles": "Geen voertuigen gevonden voor dit account.",
+      "unknown": "Er is een onverwachte fout opgetreden."
+    },
+    "abort": {
+      "already_configured": "Dit voertuig is al geconfigureerd.",
+      "auth": "Authenticatie mislukt; voeg de integratie opnieuw toe.",
+      "reauth_successful": "Opnieuw aanmelden geslaagd."
+    }
+  },
+  "exceptions": {
+    "waiting_for_portal_data": {
+      "message": "Aanmelding geslaagd — wachten op de eerste voertuiggegevens van het EU Data Act-portaal. Dit is normaal direct na de installatie en is geen aanmeldingsfout.\n\nControleer op het portaal ({portal_url}):\n• Een continue gegevensaanvraag van 15 minuten is actief voor dit voertuig\n• Het voertuig is gekoppeld onder Data clusters → Vehicle overview\n• De auto was recent online (contact aan of mobiele app)\n\nEchte gegevens komen vaak binnen 15–60 minuten, soms pas enkele uren na het activeren van de aanvraag. Lege _no_content_found-momentopnames zijn normaal wanneer de auto in een venster van 15 minuten geen telemetrie heeft verzonden; ze worden automatisch overgeslagen.\n\nHome Assistant probeert het elke {retry_minutes} minuut/minuten opnieuw. Je hoeft de integratie niet te verwijderen en opnieuw toe te voegen."
+    },
+    "waiting_for_portal_data_empty_snapshots": {
+      "message": "Aanmelding geslaagd — de portaal-aanvraag is actief, maar tot nu toe zijn alleen lege momentopnames ontvangen ({empty_count} × _no_content_found). Het voertuig heeft in die vensters van 15 minuten nog geen telemetrie verzonden.\n\nDit is geen Home Assistant- of aanmeldingsfout. Controleer op het portaal ({portal_url}) of de continue 15-minuten-aanvraag voor dit VIN is ingeschakeld en activeer de auto (rijden, contact of open de mobiele app) zodat deze gegevens kan uploaden.\n\nHet volgende interval kan echte waarden bevatten. Home Assistant probeert het elke {retry_minutes} minuut/minuten opnieuw — verwijder de integratie niet."
+    },
+    "delivery_not_ready": {
+      "message": "Aanmelding geslaagd — gegevenslevering is nog niet gereed (HTTP 400). Als je de continue 15-minuten-aanvraag op het portaal ({portal_url}) net hebt aangemaakt, kan het backend enkele uren duren voordat ZIP-bestanden worden geleverd.\n\nHome Assistant probeert het elke {retry_minutes} minuut/minuten opnieuw. Dit is geen probleem met inloggegevens."
+    }
+  }
+}

@@ -1,5 +1,100 @@
 # Release notes
 
+## v0.3.0 — ID.x sensors & clearer setup messages (2026-06-11)
+
+### Summary
+
+Expands curated entity coverage for ID.x/MEB vehicles (Cupra, Škoda Enyaq, VW ID.,
+Audi, etc.) and improves the experience while waiting for the first portal dataset.
+Setup no longer shows a cryptic English-only message — users get a detailed,
+translated explanation that login succeeded and what to check on the portal.
+
+Addresses common beta feedback such as
+[issue #1](https://github.com/TommiG1/HA_VAG-EU-Data-Act/issues/1) (integration
+stuck waiting for first data with an Enyaq).
+
+### New curated sensors (ID.x / dotted datasets)
+
+| Field | Entity |
+|-------|--------|
+| `outdoor_temperature` | Outside temperature (°C) |
+| `energy_contents.current_energy_content.physical_value` | Battery energy (kWh) |
+| `energy_contents.maximal_energy_content.physical_value` | Battery capacity (kWh) |
+| `battery_care_mode.charge_bcam_threshold` | BCAM charge threshold (%) |
+| `charging_state_report.error_code` | Charging error code |
+| `additional_consumptions.residual_consumption` | Residual consumption |
+| `additional_consumptions.interior_climatization_consumption` | Climate consumption |
+| `slope_consumption_values.ascent_slope_consumption.physical_value` | Uphill consumption |
+| `slope_consumption_values.descent_slope_consumption.physical_value` | Downhill consumption |
+| `settings.auto_unlock_ac` | Auto unlock AC |
+| `setting.bcam_activation` | BCAM activation |
+| `profile_state_report.next_charging_timer_information.target_reachability` | Charging timer reachability |
+| `value` (normalized) | Electric range (km) |
+
+Energy content values are converted from deci-kWh (portal format, e.g. `496` → `49.6 kWh`).
+
+### New binary sensors (ID.x)
+
+- `parking_light_left` / `parking_light_right`
+- All seven `charge_mode_selection_options.*` flags (immediate charging, timer
+  charging, home storage, etc.)
+
+### Clearer “waiting for portal data” messages
+
+Three distinct, **translated** `ConfigEntryNotReady` messages replace the old
+generic English string:
+
+1. **`waiting_for_portal_data`** — no real ZIPs yet
+2. **`waiting_for_portal_data_empty_snapshots`** — only `_no_content_found` files
+   (subscription active, car sent no telemetry yet)
+3. **`delivery_not_ready`** — HTTP 400, backend not ready after new subscription
+
+Each message explains that **login succeeded**, lists portal checklist items,
+mentions typical wait times, and tells users **not to remove and re-add** the
+integration (HA retries automatically).
+
+### Translations
+
+Exception messages and existing config-flow strings are now available in:
+
+- English (`en`)
+- German (`de`)
+- French (`fr`)
+- Italian (`it`)
+- Dutch (`nl`)
+
+Other UI languages fall back to English.
+
+### Technical changes
+
+- `normalize_field_name()` maps generic portal `value` fields to
+  `value_of_the_primary_range` when the dictionary description indicates primary range
+- `deci_kwh_to_kwh()` transform for `energy_contents.*.physical_value`
+- `EudaUpdateNotReady` exception maps coordinator state to HA translation keys
+
+### Upgrade notes
+
+- Reload the integration or restart Home Assistant after updating
+- New entities appear automatically when the corresponding fields are present in
+  portal datasets; no reconfiguration required
+- Existing installs waiting for first data will show the new messages on the next
+  setup retry
+
+### Tester checklist
+
+```bash
+.venv/bin/python tests/test_offline.py
+.venv/bin/python tools/test_login.py --brand skoda you@example.com 'secret'
+```
+
+| `test_login.py` exit | Meaning |
+|----------------------|---------|
+| `0` | End-to-end OK with real data |
+| `2` | Login OK, waiting for portal ZIPs (new messages explain this) |
+| `1` | Error — check brand and credentials |
+
+---
+
 ## v0.2.0 — Multi-brand support (2026-06-10)
 
 ### Summary

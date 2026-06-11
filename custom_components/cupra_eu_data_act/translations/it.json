@@ -1,0 +1,50 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "VW Group EU Data Act",
+        "description": "Seleziona la marca del veicolo e accedi con le stesse credenziali usate sul portale EU Data Act.",
+        "data": {
+          "brand": "Marca",
+          "email": "E-mail",
+          "password": "Password"
+        }
+      },
+      "vehicle": {
+        "title": "Seleziona veicolo",
+        "data": {
+          "vin": "Veicolo"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Riautenticazione",
+        "description": "Inserisci la password per {email} ({brand}).",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "E-mail o password non validi per la marca selezionata.",
+      "cannot_connect": "Impossibile connettersi al portale EU Data Act.",
+      "no_vehicles": "Nessun veicolo trovato per questo account.",
+      "unknown": "Si è verificato un errore imprevisto."
+    },
+    "abort": {
+      "already_configured": "Questo veicolo è già configurato.",
+      "auth": "Autenticazione fallita; aggiungi nuovamente l'integrazione.",
+      "reauth_successful": "Riautenticazione riuscita."
+    }
+  },
+  "exceptions": {
+    "waiting_for_portal_data": {
+      "message": "Accesso riuscito — in attesa della prima consegna di dati del veicolo dal portale EU Data Act. È normale subito dopo la configurazione e non è un errore di accesso.\n\nSul portale ({portal_url}), verifica che:\n• Una richiesta dati continua di 15 minuti sia attiva per questo veicolo\n• Il veicolo sia collegato in Data clusters → Vehicle overview\n• L'auto sia stata online di recente (contatto accensione o app mobile)\n\nI primi dati reali arrivano spesso entro 15–60 minuti, a volte alcune ore dopo l'attivazione della richiesta. Gli snapshot vuoti _no_content_found sono normali quando l'auto non ha inviato telemetria in una finestra di 15 minuti; vengono ignorati automaticamente.\n\nHome Assistant riprova ogni {retry_minutes} minuto/i. Non è necessario rimuovere e aggiungere di nuovo l'integrazione."
+    },
+    "waiting_for_portal_data_empty_snapshots": {
+      "message": "Accesso riuscito — la richiesta sul portale è attiva, ma finora sono stati ricevuti solo snapshot vuoti ({empty_count} × _no_content_found). Il veicolo non ha ancora inviato telemetria in quelle finestre di 15 minuti.\n\nNon è un errore di Home Assistant o di accesso. Sul portale ({portal_url}) conferma che la richiesta continua di 15 minuti è attiva per questo VIN e sveglia l'auto (guida, accensione o apri l'app mobile) affinché possa caricare i dati.\n\nIl prossimo intervallo può contenere valori reali. Home Assistant riprova ogni {retry_minutes} minuto/i — non rimuovere l'integrazione."
+    },
+    "delivery_not_ready": {
+      "message": "Accesso riuscito — la consegna dei dati non è ancora pronta (HTTP 400). Se hai appena creato la richiesta continua di 15 minuti sul portale ({portal_url}), il backend può impiegare alcune ore prima di iniziare a consegnare file ZIP.\n\nHome Assistant riprova ogni {retry_minutes} minuto/i. Non è un problema di credenziali."
+    }
+  }
+}

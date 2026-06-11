@@ -15,8 +15,15 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import EudaApiClient
 from .brands import DEFAULT_BRAND, get_brand
-from .const import CONF_BRAND, CONF_EMAIL, CONF_PASSWORD, CONF_VIN, raw_unique_id
-from .coordinator import EudaCoordinator
+from .const import (
+    CONF_BRAND,
+    CONF_EMAIL,
+    CONF_PASSWORD,
+    CONF_VIN,
+    DOMAIN,
+    raw_unique_id,
+)
+from .coordinator import EudaCoordinator, EudaUpdateNotReady
 from .data import load_dictionary
 
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BINARY_SENSOR]
@@ -59,7 +66,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: EudaConfigEntry) -> bool
         try:
             await coordinator.async_config_entry_first_refresh()
         except UpdateFailed as err:
-            # First ZIP can take up to ~15 min after enabling the portal request.
+            if isinstance(err, EudaUpdateNotReady):
+                raise ConfigEntryNotReady(
+                    translation_domain=DOMAIN,
+                    translation_key=err.translation_key,
+                    translation_placeholders=err.translation_placeholders,
+                ) from err
             raise ConfigEntryNotReady(str(err)) from err
 
         entry.runtime_data = EudaRuntimeData(coordinator=coordinator, session=session)

@@ -121,6 +121,21 @@ _ENUM_TOKEN_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
 _GENERIC_FIELD_NAMES = {"value", "state", "unit", "is_set", "type", "id"}
 
 
+def normalize_field_name(field_name: str, description: str | None) -> str:
+    """Give generic portal field names a stable, matchable identity.
+
+    Several dictionary entries use ``name: value`` with a descriptive sentence.
+    Without this, curated sensors cannot target them and entity names would
+    collide across unrelated ``value`` fields.
+    """
+    if field_name.lower() not in _GENERIC_FIELD_NAMES or not description:
+        return field_name
+    desc = description.strip().lower()
+    if "primary range" in desc:
+        return "value_of_the_primary_range"
+    return field_name
+
+
 def enum_members(description: str | None) -> list[str]:
     """Parse an ordered enum member list out of a dictionary description.
 
@@ -204,6 +219,9 @@ class Dataset:
                 continue
             meta = dictionary.get(key, {})
             field_name = item.get("dataFieldName") or meta.get("name") or key
+            field_name = normalize_field_name(
+                field_name, meta.get("description") or None
+            )
             dp = DataPoint(
                 key=key,
                 field_name=field_name,
@@ -343,6 +361,18 @@ def fuel_consumption_l_per_1000km_to_l_per_100km(value) -> float | None:
         return None
 
 
+def deci_kwh_to_kwh(value) -> float | None:
+    """Convert deci-kWh (0.1 kWh) portal values to kWh.
+
+    ID.x energy_contents.*.physical_value fields use 0.1 kWh resolution
+    (e.g., 496 -> 49.6 kWh).
+    """
+    try:
+        return round(float(value) / 10, 1)
+    except (ValueError, TypeError):
+        return None
+
+
 # Named unit resolvers selectable per curated sensor via ``unit_resolver``.
 UNIT_RESOLVERS = {
     "distance": resolve_distance_unit,
@@ -444,6 +474,40 @@ CURATED_SENSORS_DOTTED: tuple[CuratedSensor, ...] = (
         transform="duration_s",
         icon="mdi:battery-clock",
     ),
+    CuratedSensor(
+        "energy_contents.current_energy_content.physical_value",
+        "Battery energy",
+        "energy",
+        "kWh",
+        "measurement",
+        transform="deci_kwh",
+        icon="mdi:battery-high",
+    ),
+    CuratedSensor(
+        "energy_contents.maximal_energy_content.physical_value",
+        "Battery capacity",
+        "energy",
+        "kWh",
+        "measurement",
+        transform="deci_kwh",
+        icon="mdi:battery-sync",
+    ),
+    CuratedSensor(
+        "battery_care_mode.charge_bcam_threshold",
+        "BCAM charge threshold",
+        None,
+        "%",
+        "measurement",
+        icon="mdi:battery-heart",
+    ),
+    CuratedSensor(
+        "charging_state_report.error_code",
+        "Charging error code",
+        None,
+        None,
+        None,
+        icon="mdi:alert-circle",
+    ),
     # === Distance & Range ===
     CuratedSensor(
         "mileage.value",
@@ -467,6 +531,17 @@ CURATED_SENSORS_DOTTED: tuple[CuratedSensor, ...] = (
         unit_resolver="distance",
         suggested_display_precision=0,
     ),
+    # Cupra/MEB portal sometimes exposes range as a flat dataFieldName instead of
+    # range.value; the dictionary entry has no unit, so we declare km here.
+    CuratedSensor(
+        "value_of_the_primary_range",
+        "Electric range",
+        "distance",
+        "km",
+        "measurement",
+        icon="mdi:map-marker-distance",
+        suggested_display_precision=0,
+    ),
     # === Climate ===
     CuratedSensor(
         "remaining_climate_time",
@@ -484,7 +559,50 @@ CURATED_SENSORS_DOTTED: tuple[CuratedSensor, ...] = (
         "measurement",
         icon="mdi:battery",
     ),
+    CuratedSensor(
+        "additional_consumptions.residual_consumption",
+        "Residual consumption",
+        None,
+        "kWh/100km",
+        "measurement",
+        icon="mdi:flash",
+        suggested_display_precision=1,
+    ),
+    CuratedSensor(
+        "additional_consumptions.interior_climatization_consumption",
+        "Climate consumption",
+        None,
+        "kWh/100km",
+        "measurement",
+        icon="mdi:air-conditioner",
+        suggested_display_precision=1,
+    ),
+    CuratedSensor(
+        "slope_consumption_values.ascent_slope_consumption.physical_value",
+        "Uphill consumption",
+        None,
+        "kWh/100km",
+        "measurement",
+        icon="mdi:terrain",
+        suggested_display_precision=1,
+    ),
+    CuratedSensor(
+        "slope_consumption_values.descent_slope_consumption.physical_value",
+        "Downhill consumption",
+        None,
+        "kWh/100km",
+        "measurement",
+        icon="mdi:terrain",
+        suggested_display_precision=1,
+    ),
     # === Temperature ===
+    CuratedSensor(
+        "outdoor_temperature",
+        "Outside temperature",
+        "temperature",
+        "°C",
+        "measurement",
+    ),
     CuratedSensor(
         "min_temperature", "Battery min temperature", "temperature", "°C", "measurement"
     ),
@@ -529,6 +647,17 @@ CURATED_SENSORS_DOTTED: tuple[CuratedSensor, ...] = (
         "settings.max_charge_current_ac", "Max AC charge current", icon="mdi:current-ac"
     ),
     CuratedSensor(
+        "settings.auto_unlock_ac", "Auto unlock AC", icon="mdi:lock-open"
+    ),
+    CuratedSensor(
+        "setting.bcam_activation", "BCAM activation", icon="mdi:battery-heart"
+    ),
+    CuratedSensor(
+        "profile_state_report.next_charging_timer_information.target_reachability",
+        "Charging timer reachability",
+        icon="mdi:timer-outline",
+    ),
+    CuratedSensor(
         "window_heating_state", "Window heating", icon="mdi:car-defrost-rear"
     ),
     CuratedSensor("bem_level", "BEM level", None, None, None, icon="mdi:information"),
@@ -540,6 +669,56 @@ CURATED_BINARY_DOTTED: tuple[CuratedBinary, ...] = (
     # ID.x datasets carry a flat-named parking_brake field even though most of
     # their fields are dotted, so it belongs in the dotted group too.
     CuratedBinary("parking_brake", "Parking brake", None, icon="mdi:car-brake-parking"),
+    # === Parking Lights ===
+    CuratedBinary(
+        "parking_light_left", "Parking light left", "light", icon="mdi:car-parking-lights"
+    ),
+    CuratedBinary(
+        "parking_light_right", "Parking light right", "light", icon="mdi:car-parking-lights"
+    ),
+    # === Charge Mode Options ===
+    CuratedBinary(
+        "charge_mode_selection_options.immediate_charging",
+        "Immediate charging",
+        None,
+        icon="mdi:ev-station",
+    ),
+    CuratedBinary(
+        "charge_mode_selection_options.immediate_discharging",
+        "Immediate discharging",
+        None,
+        icon="mdi:ev-station",
+    ),
+    CuratedBinary(
+        "charge_mode_selection_options.timer_charging",
+        "Timer charging",
+        None,
+        icon="mdi:timer",
+    ),
+    CuratedBinary(
+        "charge_mode_selection_options.timer_charging_climatization",
+        "Timer charging climatization",
+        None,
+        icon="mdi:timer",
+    ),
+    CuratedBinary(
+        "charge_mode_selection_options.home_storage_charging",
+        "Home storage charging",
+        None,
+        icon="mdi:home-battery",
+    ),
+    CuratedBinary(
+        "charge_mode_selection_options.only_own_current",
+        "Only own current",
+        None,
+        icon="mdi:current-ac",
+    ),
+    CuratedBinary(
+        "charge_mode_selection_options.preferred_charging_times",
+        "Preferred charging times",
+        None,
+        icon="mdi:clock-outline",
+    ),
 )
 
 # ---------------------------------------------------------------------------
@@ -573,6 +752,15 @@ CURATED_SENSORS_FLAT: tuple[CuratedSensor, ...] = (
         "km",
         "measurement",
         icon="mdi:gas-station",
+        suggested_display_precision=0,
+    ),
+    CuratedSensor(
+        "value_of_the_primary_range",
+        "Electric range",
+        "distance",
+        "km",
+        "measurement",
+        icon="mdi:map-marker-distance",
         suggested_display_precision=0,
     ),
     CuratedSensor(

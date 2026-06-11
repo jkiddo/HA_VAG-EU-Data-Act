@@ -35,5 +35,16 @@
       "auth": "Authentication failed; please re-add the integration.",
       "reauth_successful": "Re-authentication was successful."
     }
+  },
+  "exceptions": {
+    "waiting_for_portal_data": {
+      "message": "Login successful — waiting for the first vehicle dataset from the EU Data Act portal. This is expected right after setup and is not a login error.\n\nOn the portal ({portal_url}), please check:\n• A continuous 15-minute data request is active for this vehicle\n• The vehicle is linked under Data clusters → Vehicle overview\n• The car has been online recently (ignition on or mobile app contact)\n\nFirst real data often arrives within 15–60 minutes, sometimes a few hours after enabling the request. Empty _no_content_found snapshots are normal when the car sent no telemetry in a 15-minute window; they are skipped automatically.\n\nHome Assistant retries every {retry_minutes} minute(s). You do not need to remove and re-add the integration."
+    },
+    "waiting_for_portal_data_empty_snapshots": {
+      "message": "Login successful — the portal subscription is active, but only empty snapshots have been received so far ({empty_count} × _no_content_found). The vehicle sent no telemetry in those 15-minute windows yet.\n\nThis is not a Home Assistant or login error. On the portal ({portal_url}), confirm the continuous 15-minute request is enabled for this VIN and wake the car (drive, ignition, or open the mobile app) so it can upload data.\n\nThe next interval may contain real values. Home Assistant retries every {retry_minutes} minute(s) — no need to remove the integration."
+    },
+    "delivery_not_ready": {
+      "message": "Login successful — data delivery is not ready yet (HTTP 400). If you just created the continuous 15-minute request on the portal ({portal_url}), the backend can take a few hours to start delivering ZIP files.\n\nHome Assistant retries every {retry_minutes} minute(s). This is not a credential problem."
+    }
   }
 }
