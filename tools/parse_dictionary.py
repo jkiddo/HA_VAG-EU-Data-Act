@@ -110,6 +110,20 @@ def main() -> None:
     out_path.write_text(json.dumps(mapping, indent=1, ensure_ascii=False, sort_keys=True))
     print(f"Wrote {len(mapping)} data points -> {out_path}")
 
+    meta_path = out_path.parent / "data_dictionary_meta.json"
+    meta_path.write_text(
+        json.dumps(
+            {
+                "source_file": pdf_path.name,
+                "entry_count": len(mapping),
+                "parsed_with": "tools/parse_dictionary.py",
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+    print(f"Wrote metadata -> {meta_path}")
+
     # sanity check from the plan
     sample = "3c19831c-38b8-3dc5-9ead-bb333616d925"
     if sample in mapping:

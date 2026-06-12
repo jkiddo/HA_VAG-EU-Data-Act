@@ -50,7 +50,7 @@
  },
  "0198f4be-42dc-7127-ba6f-fb11c6ecd04a": {
   "cluster": "All Data, Dynamic Technical Data Campaigns",
-  "description": "Sensorsignal der Stromschleife fÃ¼r BremsbelagverschleiÃ aktuell, entstÃ¶rt, unbewertet",
+  "description": "Sensorsignal der Stromschleife fÃ¼r BremsbelagverschleiÃ aktuell, entstÃ¶rt, unbewertet",
   "name": "BCM_Bremsbelag_Sensor_XIX_BCM_01_XIX_E3V_VLAN_Connect",
   "type": "",
   "unit": ""
@@ -78,7 +78,7 @@
  },
  "0198f4be-42dc-7127-ba6f-fb11c6ecd0d4": {
   "cluster": "All Data, Dynamic Technical Data Campaigns",
-  "description": "Status des zweiten Ventils; wassergekÃ¼hltes Batteriesystem. FÃ¼r Systeme, wo die Batterie ein zweites Ventil ansteuert. Belegung projektabhÃ¤ngig. nicht-angesteuert = groÃer KÃ¼hlkreislauf (Niedertemperatur- KÃ¼hlkreis) abgetrennt vom Batteriesystem oder WÃ¤rmetauscher angesteuert = Batterie oder WÃ¤rmetauscher eingeschleift in groÃen KÃ¼hlkreislauf (Niedertemperatur- KÃ¼hlkreis)",
+  "description": "Status des zweiten Ventils; wassergekÃ¼hltes Batteriesystem. FÃ¼r Systeme, wo die Batterie ein zweites Ventil ansteuert. Belegung projektabhÃ¤ngig. nicht-angesteuert = groÃ er KÃ¼hlkreislauf (Niedertemperatur- KÃ¼hlkreis) abgetrennt vom Batteriesystem oder WÃ¤rmetauscher angesteuert = Batterie oder WÃ¤rmetauscher eingeschleift in groÃ en KÃ¼hlkreislauf (Niedertemperatur- KÃ¼hlkreis)",
   "name": "BMS_Status_Ventil2_XIX_BMS_25_XIX_E3V_VLAN_Connect",
   "type": "",
   "unit": ""
@@ -127,7 +127,7 @@
  },
  "0198f4be-cd01-7118-b448-6448743738a5": {
   "cluster": "All Data, Dynamic Technical Data Campaigns",
-  "description": "aufgenommene elektrische Energie (Ãberlaufbehaftet)",
+  "description": "aufgenommene elektrische Energie (Ã berlaufbehaftet)",
   "name": "ELM1_WMot",
   "type": "",
   "unit": ""
@@ -162,7 +162,7 @@
  },
  "0198f4be-cd01-7118-b448-6448743738ab": {
   "cluster": "All Data, Dynamic Technical Data Campaigns",
-  "description": "Ãber dieses Signal wird das einzustellende Szenario fÃ¼r die Visualisierung gesendet.",
+  "description": "Ã ber dieses Signal wird das einzustellende Szenario fÃ¼r die Visualisierung gesendet.",
   "name": "HVLM_Ladeszenario_XIX_HVLM_14_XIX_HCP4_CANFD03",
   "type": "",
   "unit": ""
@@ -281,7 +281,7 @@
  },
  "0198f4be-cd01-7118-b448-6448743738c9": {
   "cluster": "All Data, Dynamic Technical Data Campaigns",
-  "description": "zurÃ¼ckgespeiste elektrische Energie (Ãberlaufbehaftet)",
+  "description": "zurÃ¼ckgespeiste elektrische Energie (Ã berlaufbehaftet)",
   "name": "ELM1_WGen",
   "type": "",
   "unit": ""
@@ -302,7 +302,7 @@
  },
  "0198f4be-cd01-7118-b448-6448743738cc": {
   "cluster": "All Data, Dynamic Technical Data Campaigns",
-  "description": "Aktueller relativer Ladezustand der HV- Batterie/Der angezeigte Bereich fÃ¼r Kunde ist von 0-100%/Reserve wird im negativen Bereich abgebildet/Werte Ã¼ber 100% signalisieren eine unzulÃ¤ssige Ãberladung. Physikalischer Wertebereich liegt zw. - 20% bis 120%.",
+  "description": "Aktueller relativer Ladezustand der HV- Batterie/Der angezeigte Bereich fÃ¼r Kunde ist von 0-100%/Reserve wird im negativen Bereich abgebildet/Werte Ã¼ber 100% signalisieren eine unzulÃ¤ssige Ã berladung. Physikalischer Wertebereich liegt zw. - 20% bis 120%.",
   "name": "BMC_NutzbarerSOC_XIX_BMC_HV_02_XIX_HCP4_CANFD03",
   "type": "",
   "unit": ""
@@ -535,6 +535,13 @@
   "cluster": "All Data, Dynamic Technical Data Campaigns",
   "description": "aktuelle Temperatur der AC-Ladedose an A",
   "name": "HVLS_Temp_AC_A_XIX_HVLS_Ladedose_SG1_XIX_HCP5_CANFD01",
+  "type": "",
+  "unit": ""
+ },
+ "01992caa-17ac-7844-9314-02d62bb1c3a1": {
+  "cluster": "",
+  "description": "Ansteuerung der MIL",
+  "name": "OBD_MIL_XIX_OBD_04_XIX_HCP5_CAN03",
   "type": "",
   "unit": ""
  },
@@ -834,7 +841,7 @@
  },
  "0ba7abe4-14d5-3541-adec-31be0ecdfcc9": {
   "cluster": "All Data, Charging",
-  "description": "Informs about the actual charging scenario. States are also used for brand specific configurations at charging LED. Possible values: CHARGING_SCENARIO_I NVALID, CHARGING_SCENARIO_O FF, CHARGING_SCENARIO_C HARGING_TO_DEPARTUR E_TIME_FINISHED, CHARGING_SCENARIO_I MMEDIATELY_ CHARGING_FINISHED, CHARGING_SCENARIO_O PTIMISED_ CHARGING_FINISHED, CHARGING_SCENARIO_C HARGING_ TO_DEPARTURE_TIME_AC TIVE, CHARGING_SCENARIO_I MMEDIATELY_CHARGING _ACTIVE, CHARGING_SCENARIO_O PTIMISED_CHARGING_AC",
+  "description": "Informs about the actual charging scenario. States are also used for brand specific configurations at charging LED. Possible values: CHARGING_SCENARIO_I NVALID, CHARGING_SCENARIO_O FF, CHARGING_SCENARIO_C HARGING_TO_DEPARTUR E_TIME_FINISHED, CHARGING_SCENARIO_I MMEDIATELY_ CHARGING_FINISHED, CHARGING_SCENARIO_O PTIMISED_ CHARGING_FINISHED, CHARGING_SCENARIO_C HARGING_ TO_DEPARTURE_TIME_AC TIVE, CHARGING_SCENARIO_I MMEDIATELY_CHARGING _ACTIVE, CHARGING_SCENARIO_O",
   "name": "charging_state_report.charging_scenario",
   "type": "enum",
   "unit": ""
@@ -1086,7 +1093,7 @@
  },
  "1581d30c-e516-3cfe-8f54-f4142122a6a7": {
   "cluster": "All Data, Charging",
-  "description": "IMMEDIATE_ACTION_STAT E_INVALID, IMMEDIATE_ACTION_STAT E_IMMEDIATE_ACTION_TI ME, IMMEDIATE_ACTION_STAT E_IMMEDIATE_CHARGING , IMMEDIATE_ACTION_STAT E_IMMEDIATE_ACTION_ST OPPED, IMMEDIATE_ACTION_STAT E_IMMEDIATE_ACTION_R ANGE, IMMEDIATE_ACTION_STAT E_IMMEDIATE_ACTION_S OC, IMMEDIATE_ACTION_STAT E_CHARGE_MODE_SELEC TION",
+  "description": "IMMEDIATE_ACTION_STA TE_INVALID, IMMEDIATE_ACTION_STA TE_IMMEDIATE_ACTION_T IME, IMMEDIATE_ACTION_STA TE_IMMEDIATE_CHARGIN G, IMMEDIATE_ACTION_STA TE_IMMEDIATE_ACTION_S TOPPED, IMMEDIATE_ACTION_STA TE_IMMEDIATE_ACTION_ RANGE, IMMEDIATE_ACTION_STA TE_IMMEDIATE_ACTION_S OC, IMMEDIATE_ACTION_STA TE_CHARGE_MODE_SELE CTION",
   "name": "charging_state_report.immediate_action_state",
   "type": "enum",
   "unit": ""
@@ -1261,7 +1268,7 @@
  },
  "1a84c328-d69f-370b-8021-a26e77e1933d": {
   "cluster": "All Data",
-  "description": "Possible values: MEASUREMENT_STATE_IN VALID, MEASUREMENT_STATE_U NSUPPORTED, MEASUREMENT_STATE_V ALID",
+  "description": "Possible values: MEASUREMENT_STATE_I NVALID, MEASUREMENT_STATE_U NSUPPORTED, MEASUREMENT_STATE_V ALID",
   "name": "outdoor_temperature.measurement_state",
   "type": "enum",
   "unit": ""
@@ -2115,7 +2122,7 @@
  },
  "3c217477-7218-34be-b791-86df4a41f4c8": {
   "cluster": "All Data",
-  "description": "Possible values: MEASUREMENT_STATE_IN VALID, MEASUREMENT_STATE_U NSUPPORTED, MEASUREMENT_STATE_V ALID",
+  "description": "Possible values: MEASUREMENT_STATE_I NVALID, MEASUREMENT_STATE_U NSUPPORTED, MEASUREMENT_STATE_V ALID",
   "name": "in_cabin_temperature.measurement_state",
   "type": "enum",
   "unit": ""
@@ -2780,7 +2787,7 @@
  },
  "53975124-320c-3a72-813a-8564f594850e": {
   "cluster": "All Data",
-  "description": "CHARGE_MODE_SELECTI ON_INVALID, CHARGE_MODE_SELECTI ON_TIMERCHARGING, CHARGE_MODE_SELECTI ON_IMMEDIATECHARGIN G, CHARGE_MODE_SELECTI ON_TIMER_CHARGING_C LIMATIZATION, CHARGE_MODE_SELECTI ON_PREFERRED_CHARGI NG_TIMES,CHARGE_MOD E_SELECTION_ONLY_OW N_CURRENT, CHARGE_MODE_SELECTI ON_IMMEDIATE_DISCHAR GING, CHARGE_MODE_SELECTI ON_HOME_STORAGE_CH ARGING",
+  "description": "CHARGE_MODE_SELECTI ON_INVALID, CHARGE_MODE_SELECTI ON_TIMERCHARGING, CHARGE_MODE_SELECTI ON_IMMEDIATECHARGIN G, CHARGE_MODE_SELECTI ON_TIMER_CHARGING_C LIMATIZATION, CHARGE_MODE_SELECTI ON_PREFERRED_CHARGI NG_TIMES,CHARGE_MOD E_SELECTION_ONLY_OW N_CURRENT, CHARGE_MODE_SELECTI ON_IMMEDIATE_DISCHA RGING, CHARGE_MODE_SELECTI ON_HOME_STORAGE_CH ARGING",
   "name": "settings.charge_mode_selection",
   "type": "enum",
   "unit": ""
@@ -3676,7 +3683,7 @@
  },
  "73f7a767-15d3-3f74-8d3e-a60e32b61303": {
   "cluster": "All Data",
-  "description": "the name of the corresponding profile. For example: \"House_charging_SOC_10 0\" \"PetrolStation\". The values of: \"profile state report.profiles\" & \"profile name\". Note that [*] in the key is replaced by a number.",
+  "description": "the name of the corresponding profile. For example: \"House_charging_SOC_1 00\" \"PetrolStation\". The values of: \"profile state report.profiles\" & \"profile name\". Note that [*] in the key is replaced by a number.",
   "name": "profile_state_report.profiles.[*].profile_name",
   "type": "string",
   "unit": ""
@@ -4082,7 +4089,7 @@
  },
  "81ce5ffd-a993-3ff7-a8e8-4c8c67ad993c": {
   "cluster": "All Data",
-  "description": "the name of the corresponding profile. For example: \"House_charging_SOC_10 0\" \"PetrolStation\". The values of: \"profile state report.profiles\" & \"profile name\". Note that [*] in the key is replaced by a number.",
+  "description": "the name of the corresponding profile. For example: \"House_charging_SOC_1 00\" \"PetrolStation\". The values of: \"profile state report.profiles\" & \"profile name\". Note that [*] in the key is replaced by a number.",
   "name": "profile_state_report.profiles.[*].profile_name",
   "type": "string",
   "unit": ""
@@ -4705,7 +4712,7 @@
  },
  "9905c311-6620-31ae-9b36-24e1c14edb6f": {
   "cluster": "All Data",
-  "description": "CHARGE_MODE_SELECTI ON_INVALID, CHARGE_MODE_SELECTI ON_TIMERCHARGING, CHARGE_MODE_SELECTI ON_IMMEDIATECHARGIN G, CHARGE_MODE_SELECTI ON_TIMER_CHARGING_C LIMATIZATION, CHARGE_MODE_SELECTI ON_PREFERRED_CHARGI NG_TIMES,CHARGE_MOD E_SELECTION_ONLY_OW N_CURRENT, CHARGE_MODE_SELECTI ON_IMMEDIATE_DISCHAR GING, CHARGE_MODE_SELECTI ON_HOME_STORAGE_CH ARGING",
+  "description": "CHARGE_MODE_SELECTI ON_INVALID, CHARGE_MODE_SELECTI ON_TIMERCHARGING, CHARGE_MODE_SELECTI ON_IMMEDIATECHARGIN G, CHARGE_MODE_SELECTI ON_TIMER_CHARGING_C LIMATIZATION, CHARGE_MODE_SELECTI ON_PREFERRED_CHARGI NG_TIMES,CHARGE_MOD E_SELECTION_ONLY_OW N_CURRENT, CHARGE_MODE_SELECTI ON_IMMEDIATE_DISCHA RGING, CHARGE_MODE_SELECTI ON_HOME_STORAGE_CH ARGING",
   "name": "settings.charge_mode_selection",
   "type": "enum",
   "unit": ""
@@ -5279,7 +5286,7 @@
  },
  "a8b48aad-8cd4-3534-b64d-6c8abd600972": {
   "cluster": "All Data, Charging",
-  "description": "The enum value of \"charging state report charging scenario\"",
+  "description": "PTIMISED_CHARGING_AC The enum value of \"charging state report charging scenario\"",
   "name": "charging_state_report.charging_scenario",
   "type": "enum",
   "unit": ""
@@ -5342,7 +5349,7 @@
  },
  "abf1baf4-86e6-35e5-9936-df515fd1743c": {
   "cluster": "All Data, Charging",
-  "description": "Informs about the actual charging scenario. States are also used for brand specific configurations at charging LED. Possible values: CHARGING_SCENARIO_I NVALID, CHARGING_SCENARIO_O FF, CHARGING_SCENARIO_C HARGING_TO_DEPARTUR E_TIME_FINISHED, CHARGING_SCENARIO_I MMEDIATELY_ CHARGING_FINISHED, CHARGING_SCENARIO_O PTIMISED_ CHARGING_FINISHED, CHARGING_SCENARIO_C HARGING_ TO_DEPARTURE_TIME_AC TIVE, CHARGING_SCENARIO_I MMEDIATELY_CHARGING _ACTIVE, CHARGING_SCENARIO_O PTIMISED_CHARGING_AC",
+  "description": "Informs about the actual charging scenario. States are also used for brand specific configurations at charging LED. Possible values: CHARGING_SCENARIO_I NVALID, CHARGING_SCENARIO_O FF, CHARGING_SCENARIO_C HARGING_TO_DEPARTUR E_TIME_FINISHED, CHARGING_SCENARIO_I MMEDIATELY_ CHARGING_FINISHED, CHARGING_SCENARIO_O PTIMISED_ CHARGING_FINISHED, CHARGING_SCENARIO_C HARGING_ TO_DEPARTURE_TIME_AC TIVE, CHARGING_SCENARIO_I MMEDIATELY_CHARGING _ACTIVE, CHARGING_SCENARIO_O",
   "name": "charging_state_report.charging_scenario",
   "type": "enum",
   "unit": ""
@@ -5552,7 +5559,7 @@
  },
  "b2278ea5-b5b5-3cf6-bee8-dab5dda97b68": {
   "cluster": "All Data, Charging",
-  "description": "Possible values: INFORMATION_INVALID, INFORMATION_DISCHAR GING_ACTIVE, INFORMATION_DISCHAR GING_STOPPED, INFORMATION_HOME_ST ORAGE_CHARGING_ACTI VE, INFORMATION_HOME_ST ORAGE_CHARGING_STOP PED, INFORMATION_EMERGEN CY_SUPPLY_ACTIVE, INFORMATION_EMERGEN CY_SUPPLY_STOPPED, INFORMATION_OFF_GRID _OPERATION_ACTIVE, INFORMATION_OFF_GRID _OPERATION_STOPPED, INFORMATION_DISCHAR GING_FINISHED_MIN_SO C, INFORMATION_BIDI_AVAI LABLE_NO_PROFILE, INFORMATION_BIDI_NOT _POSSIBLE_MINSOC, INFORMATION_BIDI_NOT",
+  "description": "Possible values: INFORMATION_INVALID, INFORMATION_DISCHAR GING_ACTIVE, INFORMATION_DISCHAR GING_STOPPED, INFORMATION_HOME_ST ORAGE_CHARGING_ACTI VE, INFORMATION_HOME_ST ORAGE_CHARGING_STOP PED, INFORMATION_EMERGEN CY_SUPPLY_ACTIVE, INFORMATION_EMERGEN CY_SUPPLY_STOPPED, INFORMATION_OFF_GRID _OPERATION_ACTIVE, INFORMATION_OFF_GRID _OPERATION_STOPPED, INFORMATION_DISCHAR GING_FINISHED_MIN_SO C, INFORMATION_BIDI_AVAI LABLE_NO_PROFILE, INFORMATION_BIDI_NOT _POSSIBLE_MINSOC,",
   "name": "bidirectional_charging_mode.mode_information",
   "type": "enum",
   "unit": ""
@@ -5951,7 +5958,7 @@
  },
  "c02b446e-32c8-35b0-a9e3-976e0c3fde77": {
   "cluster": "All Data",
-  "description": "CHARGE_MODE_SELECTI ON_INVALID, CHARGE_MODE_SELECTI ON_TIMERCHARGING, CHARGE_MODE_SELECTI ON_IMMEDIATECHARGIN G, CHARGE_MODE_SELECTI ON_TIMER_CHARGING_C LIMATIZATION, CHARGE_MODE_SELECTI ON_PREFERRED_CHARGI NG_TIMES,CHARGE_MOD E_SELECTION_ONLY_OW N_CURRENT, CHARGE_MODE_SELECTI ON_IMMEDIATE_DISCHAR GING, CHARGE_MODE_SELECTI ON_HOME_STORAGE_CH ARGING",
+  "description": "CHARGE_MODE_SELECTI ON_INVALID, CHARGE_MODE_SELECTI ON_TIMERCHARGING, CHARGE_MODE_SELECTI ON_IMMEDIATECHARGIN G, CHARGE_MODE_SELECTI ON_TIMER_CHARGING_C LIMATIZATION, CHARGE_MODE_SELECTI ON_PREFERRED_CHARGI NG_TIMES,CHARGE_MOD E_SELECTION_ONLY_OW N_CURRENT, CHARGE_MODE_SELECTI ON_IMMEDIATE_DISCHA RGING, CHARGE_MODE_SELECTI ON_HOME_STORAGE_CH ARGING",
   "name": "settings.charge_mode_selection",
   "type": "enum",
   "unit": ""
@@ -6168,7 +6175,7 @@
  },
  "c7aa1c25-7c32-3b9a-a732-1d9fd786bbfe": {
   "cluster": "All Data, Charging",
-  "description": "Informs about the actual charging scenario. States are also used for brand specific configurations at charging LED. Possible values: CHARGING_SCENARIO_I NVALID, CHARGING_SCENARIO_O FF, CHARGING_SCENARIO_C HARGING_TO_DEPARTUR E_TIME_FINISHED, CHARGING_SCENARIO_I MMEDIATELY_ CHARGING_FINISHED, CHARGING_SCENARIO_O PTIMISED_ CHARGING_FINISHED, CHARGING_SCENARIO_C HARGING_ TO_DEPARTURE_TIME_AC TIVE, CHARGING_SCENARIO_I MMEDIATELY_CHARGING _ACTIVE, CHARGING_SCENARIO_O PTIMISED_CHARGING_AC",
+  "description": "Informs about the actual charging scenario. States are also used for brand specific configurations at charging LED. Possible values: CHARGING_SCENARIO_I NVALID, CHARGING_SCENARIO_O FF, CHARGING_SCENARIO_C HARGING_TO_DEPARTUR E_TIME_FINISHED, CHARGING_SCENARIO_I MMEDIATELY_ CHARGING_FINISHED, CHARGING_SCENARIO_O PTIMISED_ CHARGING_FINISHED, CHARGING_SCENARIO_C HARGING_ TO_DEPARTURE_TIME_AC TIVE, CHARGING_SCENARIO_I MMEDIATELY_CHARGING _ACTIVE, CHARGING_SCENARIO_O",
   "name": "charging_state_report.charging_scenario",
   "type": "enum",
   "unit": ""
@@ -6259,14 +6266,14 @@
  },
  "c9203a5b-0fac-3423-a438-973cf67dc901": {
   "cluster": "All Data, Charging",
-  "description": "ENGINE_TYPE_INVALID, ENGINE_TYPE_GAS_CNG, ENGINE_TYPE_GAS_LPG, ENGINE_TYPE_PETROL_DI ESEL, ENGINE_TYPE_PETROL_G ASOLINE, ENGINE_TYPE_TYPE_IS_E LECTRIC, ENGINE_TYPE_TYPE_IS_G AS, ENGINE_TYPE_TYPE_IS_P ETROL, ENGINE_TYPE_UNSUPPO RTED. The values of: \"battery state report.cruising ranges\" & \"engine type\". Note that [*] in the key is replaced by a number.",
+  "description": "ENGINE_TYPE_INVALID, ENGINE_TYPE_GAS_CNG, ENGINE_TYPE_GAS_LPG, ENGINE_TYPE_PETROL_D IESEL, ENGINE_TYPE_PETROL_G ASOLINE, ENGINE_TYPE_TYPE_IS_E LECTRIC, ENGINE_TYPE_TYPE_IS_G AS, ENGINE_TYPE_TYPE_IS_P ETROL, ENGINE_TYPE_UNSUPPO RTED. The values of: \"battery state report.cruising ranges\" & \"engine type\". Note that [*] in the key is replaced by a number.",
   "name": "battery_state_report.cruising_ranges.[*].engine_type",
   "type": "enum",
   "unit": ""
  },
  "c92f946c-3dea-317f-88c7-620e4c15fe1c": {
   "cluster": "All Data, Charging",
-  "description": "ENGINE_TYPE_INVALID, ENGINE_TYPE_GAS_CNG, ENGINE_TYPE_GAS_LPG, ENGINE_TYPE_PETROL_DI ESEL, ENGINE_TYPE_PETROL_G ASOLINE, ENGINE_TYPE_TYPE_IS_E LECTRIC, ENGINE_TYPE_TYPE_IS_G AS, ENGINE_TYPE_TYPE_IS_P ETROL, ENGINE_TYPE_UNSUPPO RTED. The values of: \"battery state report.cruising ranges\" & \"engine type\". Note that [*] in the key is replaced by a number.",
+  "description": "ENGINE_TYPE_INVALID, ENGINE_TYPE_GAS_CNG, ENGINE_TYPE_GAS_LPG, ENGINE_TYPE_PETROL_D IESEL, ENGINE_TYPE_PETROL_G ASOLINE, ENGINE_TYPE_TYPE_IS_E LECTRIC, ENGINE_TYPE_TYPE_IS_G AS, ENGINE_TYPE_TYPE_IS_P ETROL, ENGINE_TYPE_UNSUPPO RTED. The values of: \"battery state report.cruising ranges\" & \"engine type\". Note that [*] in the key is replaced by a number.",
   "name": "battery_state_report.cruising_ranges.[*].engine_type",
   "type": "enum",
   "unit": ""
@@ -6413,7 +6420,7 @@
  },
  "cd818487-0687-3a3f-9044-26d1f22860ba": {
   "cluster": "All Data, Charging",
-  "description": "IMMEDIATE_ACTION_STAT E_INVALID, IMMEDIATE_ACTION_STAT E_IMMEDIATE_ACTION_TI ME, IMMEDIATE_ACTION_STAT E_IMMEDIATE_CHARGING , IMMEDIATE_ACTION_STAT E_IMMEDIATE_ACTION_ST OPPED, IMMEDIATE_ACTION_STAT E_IMMEDIATE_ACTION_R ANGE, IMMEDIATE_ACTION_STAT E_IMMEDIATE_ACTION_S OC, IMMEDIATE_ACTION_STAT E_CHARGE_MODE_SELEC TION",
+  "description": "IMMEDIATE_ACTION_STA TE_INVALID, IMMEDIATE_ACTION_STA TE_IMMEDIATE_ACTION_T IME, IMMEDIATE_ACTION_STA TE_IMMEDIATE_CHARGIN G, IMMEDIATE_ACTION_STA TE_IMMEDIATE_ACTION_S TOPPED, IMMEDIATE_ACTION_STA TE_IMMEDIATE_ACTION_ RANGE, IMMEDIATE_ACTION_STA TE_IMMEDIATE_ACTION_S OC, IMMEDIATE_ACTION_STA TE_CHARGE_MODE_SELE CTION",
   "name": "charging_state_report.immediate_action_state",
   "type": "enum",
   "unit": ""
@@ -6455,7 +6462,7 @@
  },
  "ce5ec1df-41f4-31b4-89a6-dde5ae052879": {
   "cluster": "All Data",
-  "description": "the name of the corresponding profile. For example: \"House_charging_SOC_10 0\" \"PetrolStation\". The values of: \"profile state report.profiles\" & \"profile name\". Note that [*] in the key is replaced by a number.",
+  "description": "the name of the corresponding profile. For example: \"House_charging_SOC_1 00\" \"PetrolStation\". The values of: \"profile state report.profiles\" & \"profile name\". Note that [*] in the key is replaced by a number.",
   "name": "profile_state_report.profiles.[*].profile_name",
   "type": "string",
   "unit": ""
@@ -6847,7 +6854,7 @@
  },
  "d9d15909-a5cd-3085-87a7-fd4b6c87640c": {
   "cluster": "All Data, Charging",
-  "description": "ENGINE_TYPE_INVALID, ENGINE_TYPE_GAS_CNG, ENGINE_TYPE_GAS_LPG, ENGINE_TYPE_PETROL_DI ESEL, ENGINE_TYPE_PETROL_G ASOLINE, ENGINE_TYPE_TYPE_IS_E LECTRIC, ENGINE_TYPE_TYPE_IS_G AS, ENGINE_TYPE_TYPE_IS_P ETROL, ENGINE_TYPE_UNSUPPO RTED. The values of: \"battery state report.cruising ranges\" & \"engine type\". Note that [*] in the key is replaced by a number.",
+  "description": "ENGINE_TYPE_INVALID, ENGINE_TYPE_GAS_CNG, ENGINE_TYPE_GAS_LPG, ENGINE_TYPE_PETROL_D IESEL, ENGINE_TYPE_PETROL_G ASOLINE, ENGINE_TYPE_TYPE_IS_E LECTRIC, ENGINE_TYPE_TYPE_IS_G AS, ENGINE_TYPE_TYPE_IS_P ETROL, ENGINE_TYPE_UNSUPPO RTED. The values of: \"battery state report.cruising ranges\" & \"engine type\". Note that [*] in the key is replaced by a number.",
   "name": "battery_state_report.cruising_ranges.[*].engine_type",
   "type": "enum",
   "unit": ""
@@ -6987,7 +6994,7 @@
  },
  "defd7ed1-c1aa-318a-9324-bd91a9c52246": {
   "cluster": "All Data, Charging",
-  "description": "IMMEDIATE_ACTION_STAT E_INVALID, IMMEDIATE_ACTION_STAT E_IMMEDIATE_ACTION_TI ME, IMMEDIATE_ACTION_STAT E_IMMEDIATE_CHARGING , IMMEDIATE_ACTION_STAT E_IMMEDIATE_ACTION_ST OPPED, IMMEDIATE_ACTION_STAT E_IMMEDIATE_ACTION_R ANGE, IMMEDIATE_ACTION_STAT E_IMMEDIATE_ACTION_S OC, IMMEDIATE_ACTION_STAT E_CHARGE_MODE_SELEC TION",
+  "description": "IMMEDIATE_ACTION_STA TE_INVALID, IMMEDIATE_ACTION_STA TE_IMMEDIATE_ACTION_T IME, IMMEDIATE_ACTION_STA TE_IMMEDIATE_CHARGIN G, IMMEDIATE_ACTION_STA TE_IMMEDIATE_ACTION_S TOPPED, IMMEDIATE_ACTION_STA TE_IMMEDIATE_ACTION_ RANGE, IMMEDIATE_ACTION_STA TE_IMMEDIATE_ACTION_S OC, IMMEDIATE_ACTION_STA TE_CHARGE_MODE_SELE CTION",
   "name": "charging_state_report.immediate_action_state",
   "type": "enum",
   "unit": ""
@@ -7036,7 +7043,7 @@
  },
  "e0524804-fc3d-3260-b60f-c17de7c8f1c4": {
   "cluster": "All Data, Charging",
-  "description": "Bidirectional charging cycles",
+  "description": "INFORMATION_BIDI_NOT Bidirectional charging cycles",
   "name": "bidirectional_charging_mode.numbers_of_cycles",
   "type": "int",
   "unit": ""
@@ -7477,7 +7484,7 @@
  },
  "ef9df1d9-de38-32f6-8d11-699777a7e9ef": {
   "cluster": "All Data",
-  "description": "the name of the corresponding profile. For example: \"House_charging_SOC_10 0\" \"PetrolStation\". The values of: \"profile state report.profiles\" & \"profile name\". Note that [*] in the key is replaced by a number.",
+  "description": "the name of the corresponding profile. For example: \"House_charging_SOC_1 00\" \"PetrolStation\". The values of: \"profile state report.profiles\" & \"profile name\". Note that [*] in the key is replaced by a number.",
   "name": "profile_state_report.profiles.[*].profile_name",
   "type": "string",
   "unit": ""
@@ -7799,7 +7806,7 @@
  },
  "faffdf9f-7d7b-3624-b50e-8c68ea84f147": {
   "cluster": "All Data",
-  "description": "CHARGE_MODE_SELECTI ON_INVALID, CHARGE_MODE_SELECTI ON_TIMERCHARGING, CHARGE_MODE_SELECTI ON_IMMEDIATECHARGIN G, CHARGE_MODE_SELECTI ON_TIMER_CHARGING_C LIMATIZATION, CHARGE_MODE_SELECTI ON_PREFERRED_CHARGI NG_TIMES,CHARGE_MOD E_SELECTION_ONLY_OW N_CURRENT, CHARGE_MODE_SELECTI ON_IMMEDIATE_DISCHAR GING, CHARGE_MODE_SELECTI ON_HOME_STORAGE_CH ARGING",
+  "description": "CHARGE_MODE_SELECTI ON_INVALID, CHARGE_MODE_SELECTI ON_TIMERCHARGING, CHARGE_MODE_SELECTI ON_IMMEDIATECHARGIN G, CHARGE_MODE_SELECTI ON_TIMER_CHARGING_C LIMATIZATION, CHARGE_MODE_SELECTI ON_PREFERRED_CHARGI NG_TIMES,CHARGE_MOD E_SELECTION_ONLY_OW N_CURRENT, CHARGE_MODE_SELECTI ON_IMMEDIATE_DISCHA RGING, CHARGE_MODE_SELECTI ON_HOME_STORAGE_CH ARGING",
   "name": "settings.charge_mode_selection",
   "type": "enum",
   "unit": ""

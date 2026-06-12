@@ -10,7 +10,10 @@ Additional API behaviour was documented from these MIT-licensed projects:
 - [ioBroker.vw-connect](https://github.com/TA2k/ioBroker.vw-connect) — `lib/euDataAct.js`
 
 The EU Data Act data field dictionary is based on Volkswagen Group's published
-SVK Data Dictionary (see `data_dictionary.json`).
+**Continuous Data** dictionary PDF (`DataDictionary_V5.0_Continuous Data.pdf`,
+document version **1.0.5**, 2026-02-25). The integration ships the parsed JSON
+as `data_dictionary.json` (see `data_dictionary_meta.json` for provenance).
+Regenerate with `tools/parse_dictionary.py` when the portal publishes an update.
 
 ## MIT License (hass-vw-eu-data-act)
 

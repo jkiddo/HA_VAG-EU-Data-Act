@@ -1,5 +1,22 @@
 # Release notes
 
+## v0.6.13 — Data dictionary V5.0 (2026-06-12)
+
+### Summary
+
+Bundled `data_dictionary.json` regenerated from the latest portal dictionary
+**DataDictionary_V5.0_Continuous Data.pdf** (document version 1.0.5,
+2026-02-25).
+
+### Changes
+
+- **1142** data points (+1 vs. previous bundle): new OBD MIL field
+  (`OBD_MIL_XIX_OBD_04_XIX_HCP5_CAN03`).
+- Provenance recorded in `data_dictionary_meta.json`.
+- Regenerate locally: `python tools/parse_dictionary.py <PDF_PATH>`.
+
+---
+
 ## v0.6.12 — Cupra dotted field mappings (2026-06-12)
 
 ### Summary

@@ -15,7 +15,8 @@ from functools import lru_cache
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Data dictionary (generated from the PDF by tools/parse_dictionary.py)
+# Data dictionary (generated from the portal PDF by tools/parse_dictionary.py;
+# provenance: data_dictionary_meta.json — currently V5.0 / doc 1.0.5)
 # ---------------------------------------------------------------------------
 
 _DICT_PATH = Path(__file__).parent / "data_dictionary.json"

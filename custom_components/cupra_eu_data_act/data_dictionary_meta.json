@@ -1,0 +1,10 @@
+{
+  "source_file": "DataDictionary_V5.0_Continuous Data.pdf",
+  "portal_label": "V5.0",
+  "document_version": "1.0.5",
+  "document_date": "2026-02-25",
+  "title": "List of Continuous Data",
+  "entry_count": 1142,
+  "parsed_with": "tools/parse_dictionary.py",
+  "notes": "Regenerate data_dictionary.json when VW publishes a newer portal dictionary PDF."
+}
