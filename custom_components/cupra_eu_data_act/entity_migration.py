@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 
@@ -13,6 +14,7 @@ from .data import (
     CURATED_SENSORS_DOTTED,
     CURATED_SENSORS_FLAT,
     curated_translation_key,
+    is_raw_metadata_field,
 )
 
 _FIELD_TO_TRANSLATION_KEY: dict[str, str] = {
@@ -48,40 +50,55 @@ def translation_key_for_unique_id(unique_id: str, vin: str) -> str | None:
     )
 
 
+def entity_registry_updates(
+    reg_entry: er.RegistryEntry, vin: str
+) -> dict | None:
+    """Return registry updates for one entity, or None if unchanged."""
+    if reg_entry.domain not in ("sensor", "binary_sensor"):
+        return None
+
+    if reg_entry.unique_id in (
+        f"{vin}_mileage.value.timestamp",
+        f"{vin}_mileage.timestamp",
+    ):
+        return {"new_unique_id": f"{vin}_last_connected"}
+
+    if reg_entry.unique_id == f"{vin}_car_captured_time":
+        if reg_entry.disabled_by is None:
+            return {"disabled_by": er.RegistryEntryDisabler.INTEGRATION}
+        return None
+
+    if (
+        reg_entry.domain == "sensor"
+        and reg_entry.translation_key is None
+        and reg_entry.entity_category == EntityCategory.DIAGNOSTIC
+    ):
+        name = reg_entry.original_name or ""
+        if is_raw_metadata_field(name) and reg_entry.disabled_by is None:
+            return {"disabled_by": er.RegistryEntryDisabler.INTEGRATION}
+
+    updates: dict = {}
+    key = translation_key_for_unique_id(reg_entry.unique_id, vin)
+    if not key:
+        return None
+    if reg_entry.translation_key == key and reg_entry.name is None:
+        return None
+    updates["translation_key"] = key
+    updates["name"] = None
+    return updates
+
+
 async def async_migrate_entity_translations(
     hass: HomeAssistant, entry: ConfigEntry
 ) -> None:
     """Ensure curated entities use translation_key instead of stale registry names.
 
-    Curated sensors and binary sensors must not set ``_attr_name`` (especially not
-    to ``None`` — that tells HA to use the device name only). Existing registry
-    entries created before localization may lack ``translation_key`` or still carry
-    a custom ``name`` override.
+    Also disables legacy duplicate timestamp/meta entities (upstream #23).
     """
     vin = entry.data[CONF_VIN]
 
     @callback
     def _migrate(reg_entry: er.RegistryEntry) -> dict | None:
-        if reg_entry.domain not in ("sensor", "binary_sensor"):
-            return None
-        updates: dict = {}
-        if reg_entry.unique_id in (
-            f"{vin}_mileage.value.timestamp",
-            f"{vin}_mileage.timestamp",
-        ):
-            updates["new_unique_id"] = f"{vin}_last_connected"
-        unique_id = updates.get("new_unique_id", reg_entry.unique_id)
-        key = translation_key_for_unique_id(unique_id, vin)
-        if not key:
-            return updates or None
-        if (
-            not updates
-            and reg_entry.translation_key == key
-            and reg_entry.name is None
-        ):
-            return None
-        updates.setdefault("translation_key", key)
-        updates.setdefault("name", None)
-        return updates
+        return entity_registry_updates(reg_entry, vin)
 
     await er.async_migrate_entries(hass, entry.entry_id, _migrate)

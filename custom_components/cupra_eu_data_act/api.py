@@ -398,6 +398,13 @@ class EudaApiClient:
 
     async def async_download_dataset(self, vin: str, identifier: str, name: str) -> dict:
         """Download a specific zip by name and return the parsed JSON inside it."""
+        raw = await self.async_download_dataset_raw(vin, identifier, name)
+        return self.parse_dataset_zip(raw, name)
+
+    async def async_download_dataset_raw(
+        self, vin: str, identifier: str, name: str
+    ) -> bytes:
+        """Download a portal ZIP and return the raw bytes (for local caching)."""
         await self.async_ensure_login()
         if name.endswith(NO_CONTENT_SUFFIX):
             raise ApiError(f"{name} contains no content")
@@ -414,19 +421,17 @@ class EudaApiClient:
                                 f"Download {name} -> HTTP {resp2.status}",
                                 status=resp2.status,
                             )
-                        raw = await resp2.read()
-                elif resp.status >= 400:
+                        return await resp2.read()
+                if resp.status >= 400:
                     raise ApiError(
                         f"Download {name} -> HTTP {resp.status}", status=resp.status
                     )
-                else:
-                    raw = await resp.read()
+                return await resp.read()
         except aiohttp.ClientError as err:
             raise ApiError(f"Connection error downloading {name}: {err}") from err
-        return self._unzip_json(raw, name)
 
     @staticmethod
-    def _unzip_json(raw: bytes, name: str) -> dict:
+    def parse_dataset_zip(raw: bytes, name: str) -> dict:
         try:
             with zipfile.ZipFile(io.BytesIO(raw)) as zf:
                 members = [n for n in zf.namelist() if n.lower().endswith(".json")]

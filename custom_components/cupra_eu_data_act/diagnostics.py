@@ -75,15 +75,28 @@ async def async_get_config_entry_diagnostics(
         },
     }
 
-    if dataset:
-        payload["latest_dataset"] = {
-            "captured_at": dataset.captured_at.isoformat()
-            if dataset.captured_at
-            else None,
-            "point_count": len(dataset.points),
-            "sample_fields": sorted(
-                {dp.field_name for dp in dataset.points.values()} & CURATED_FIELDS
-            )[:20],
+    if dataset or coordinator.latest_dataset_name or coordinator.last_download_attempts:
+        latest_dataset: dict[str, Any] = {
+            "name": coordinator.latest_dataset_name,
+            "last_download_attempts": coordinator.last_download_attempts,
         }
+        if dataset:
+            latest_dataset.update(
+                {
+                    "captured_at": dataset.captured_at.isoformat()
+                    if dataset.captured_at
+                    else None,
+                    "point_count": len(dataset.points),
+                    "sample_fields": sorted(
+                        {dp.field_name for dp in dataset.points.values()}
+                        & CURATED_FIELDS
+                    )[:20],
+                }
+            )
+        payload["latest_dataset"] = latest_dataset
+
+    cached = coordinator.cached_datasets()
+    if cached:
+        payload["cached_datasets"] = cached[:3]
 
     return async_redact_data(payload, TO_REDACT)

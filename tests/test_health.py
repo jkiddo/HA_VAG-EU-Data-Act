@@ -139,4 +139,4 @@ def test_health_sensor_values(hass, monkeypatch) -> None:
 
     assert days_sensor.native_value is not None
     assert minutes_sensor.native_value == 60
-    assert uncurated_sensor.native_value == 2  # report_type + range.unit
+    assert uncurated_sensor.native_value == 1  # range.unit (report_type omitted)

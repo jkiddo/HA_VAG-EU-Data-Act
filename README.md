@@ -49,7 +49,8 @@ Use the brand that matches your account credentials (VW ID, myAudi, Cupra ID, et
 1. Open [eu-data-act.drivesomethinggreater.com](https://eu-data-act.drivesomethinggreater.com/)
 2. Sign in and connect your vehicle under **Data clusters → Vehicle overview**
 3. Create a **continuous** data request with **15-minute** frequency
-4. Wait until ZIP files with real content appear
+4. When choosing the dataset, select **All Data** — not only **Charging**. A charging-only request delivers far fewer fields (battery, range, mileage, and many other sensors need the full dataset).
+5. Wait until ZIP files with real content appear
 
 ## Installation
 
@@ -117,6 +118,7 @@ adding to your own dashboard (UI entity picker or Mushroom Cards via HACS).
 - Read-only, ~15 min latency, portal-dependent delivery
 - `_no_content_found.zip` empty snapshots are skipped automatically
 - Porsche is not on this portal
+- Intended for persons living in the **EU(27)** with vehicles **registered in the EU(27)**. Users outside the EU (e.g. Switzerland) may register on the portal but often receive no actual data delivery
 
 ## Support
 

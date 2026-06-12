@@ -292,18 +292,36 @@ class Dataset:
         return find_by_field(self.points, field_name)
 
 
+_MIN_DT = datetime.min.replace(tzinfo=timezone.utc)
+
+
+def _datapoint_freshness(dp: DataPoint) -> datetime | None:
+    """Best-known time a single data point describes, or None if unknown.
+
+    Uses the point's own ``timestampUtc`` when present; for captured-time
+    fields the value itself *is* the timestamp.
+    """
+    if dp.timestamp:
+        return dp.timestamp
+    if dp.field_name.rsplit(".", 1)[-1] in _CAPTURED_TIME_SUFFIXES:
+        return parse_timestamp(dp.raw_value)
+    return None
+
+
 def find_by_field(
     points: dict[str, DataPoint], field_name: str
 ) -> DataPoint | None:
     """Return a single data point for a (possibly duplicated) field name.
 
     The portal merges several report snapshots into one flat array with no
-    ordering guarantee and no way to tell which value is "live", so a field
-    like ``charging_state_report.current_charge_state`` can appear several
-    times under different UUIDs with conflicting values. We pick the entry
-    with the smallest ``key`` (UUID): an arbitrary but *stable* choice, so a
-    curated sensor consistently tracks the same data point across refreshes
-    instead of flip-flopping when the portal reshuffles the array.
+    ordering guarantee, so a field like
+    ``charging_state_report.current_charge_state`` can appear several times
+    under different UUIDs with conflicting values. We prefer usable readings,
+    then the **freshest** one (by its own ``timestampUtc`` / captured time).
+    When no timestamps distinguish the candidates we fall back to the smallest
+    ``key`` (UUID) — an arbitrary but *stable* choice so a curated sensor keeps
+    tracking the same point across refreshes instead of flip-flopping when the
+    portal reshuffles the array.
     """
     matches = [dp for dp in points.values() if dp.field_name == field_name]
     if not matches:
@@ -311,13 +329,48 @@ def find_by_field(
     usable = [
         dp for dp in matches if is_usable_reading(dp.value, dp.field_name)
     ]
-    return min(usable or matches, key=lambda dp: dp.key)
+    candidates = usable or matches
+
+    def rank(dp: DataPoint) -> tuple[bool, datetime]:
+        fresh = _datapoint_freshness(dp)
+        return (fresh is not None, fresh or _MIN_DT)
+
+    top = rank(max(candidates, key=rank))
+    tied = [dp for dp in candidates if rank(dp) == top]
+    return min(tied, key=lambda dp: dp.key)
 
 
 # Field suffixes that carry when the vehicle last reported to the backend.
 _CAPTURED_TIME_SUFFIXES = frozenset(
     {"car_captured_time", "car_captured_utc_timestamp"}
 )
+
+# Portal metadata fields we intentionally omit from raw diagnostic sensors.
+# Exact names only (e.g. bare ``timestamp``) — avoids matching curated
+# ``mileage.value.timestamp``.
+RAW_METADATA_EXACT = frozenset(
+    {
+        "message_id",
+        "report_type",
+        "timestamp",
+    }
+)
+RAW_METADATA_SUFFIXES = frozenset(
+    {
+        "car_captured_utc_timestamp",
+        "car_captured_time",
+    }
+)
+
+
+def is_raw_metadata_field(field_name: str) -> bool:
+    """True when a field is portal metadata, not a user-facing reading."""
+    if field_name in RAW_METADATA_EXACT:
+        return True
+    for suffix in RAW_METADATA_SUFFIXES:
+        if field_name == suffix or field_name.endswith(f".{suffix}"):
+            return True
+    return False
 
 
 def latest_captured_time(points: dict[str, "DataPoint"]) -> datetime | None:
@@ -573,19 +626,30 @@ def merge_data_points(
 ) -> dict[str, DataPoint]:
     """Merge a new portal snapshot into previous data, keeping last good readings.
 
-    When the portal omits a field or sends a sentinel, the previous value for
-    that dataset key is preserved so coordinator state does not regress across
-    refreshes (entity-level sticky then covers per-sensor display).
+    Rules per dataset key:
+    - A sentinel/missing new value never overwrites an existing one (the
+      previous good reading is kept; entity-level sticky covers display).
+    - A usable new value replaces a previous sentinel/unusable one.
+    - When both are usable but carry timestamps, an *older* new value (e.g. from
+      a fallback to a previous dataset after a download failure) does not
+      regress the state — the fresher reading wins (issue #24).
     """
     merged = dict(existing)
     for key, dp in new.items():
         old = merged.get(key)
-        if is_usable_reading(dp.value, dp.field_name):
+        if old is None:
             merged[key] = dp
-        elif old is not None:
             continue
-        else:
+        if not is_usable_reading(dp.value, dp.field_name):
+            continue
+        if not is_usable_reading(old.value, old.field_name):
             merged[key] = dp
+            continue
+        old_fresh = _datapoint_freshness(old)
+        new_fresh = _datapoint_freshness(dp)
+        if old_fresh is not None and new_fresh is not None and new_fresh < old_fresh:
+            continue
+        merged[key] = dp
     return merged
 
 
@@ -885,23 +949,6 @@ CURATED_SENSORS_DOTTED: tuple[CuratedSensor, ...] = (
         "max_temperature", "Battery max temperature", "temperature", "°C", "measurement"
     ),
     # === Vehicle Status ===
-    CuratedSensor(
-        "mileage.value.timestamp",
-        "Last connected",
-        "timestamp",
-        None,
-        None,
-        icon="mdi:clock",
-    ),
-    CuratedSensor(
-        "car_captured_time",
-        "Last telemetry",
-        "timestamp",
-        None,
-        None,
-        transform="iso_timestamp",
-        icon="mdi:cloud-sync-outline",
-    ),
     CuratedSensor(
         "instrument_cluster_time",
         "Vehicle clock",
@@ -1680,8 +1727,9 @@ CURATED_FIELDS: frozenset[str] = frozenset(
 def field_coverage(points: dict[str, DataPoint]) -> dict[str, object]:
     """Summarise which dataset fields are curated vs exposed only as raw diagnostics."""
     present = {dp.field_name for dp in points.values()}
+    omitted = {f for f in present if is_raw_metadata_field(f)}
     curated = sorted(present & CURATED_FIELDS)
-    uncurated = sorted(present - CURATED_FIELDS)
+    uncurated = sorted(present - CURATED_FIELDS - omitted)
     return {
         "field_count": len(present),
         "curated_count": len(curated),

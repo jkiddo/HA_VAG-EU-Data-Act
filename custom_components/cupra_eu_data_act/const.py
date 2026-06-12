@@ -54,6 +54,11 @@ MIN_INTERVAL = timedelta(seconds=30)
 
 NO_CONTENT_SUFFIX = "_no_content_found.zip"
 
+# --- Local dataset cache (P4 / upstream #31) ----------------------------
+CACHE_DIR_NAME = "cupra_eu_data_act_cache"
+MAX_CACHED_DATASETS = 10
+MAX_CACHE_BYTES_PER_VIN = 50_000_000
+
 # --- Subscription / snapshot health (A3, B11) ----------------------------
 SUBSCRIPTION_VALIDITY = timedelta(days=365)
 SUBSCRIPTION_WARNING_BEFORE = timedelta(days=30)

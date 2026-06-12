@@ -27,7 +27,9 @@ from .data import (
     field_coverage,
     find_by_field,
     friendly_name,
+    is_raw_metadata_field,
     is_sentinel,
+    is_usable_reading,
     last_connected_time,
     latest_captured_time,
     resolve_distance_unit,
@@ -95,6 +97,8 @@ async def async_setup_entry(
                 continue
             if curated.field_name in _LAST_CONNECTED_CURATED_FIELDS:
                 continue
+            if is_raw_metadata_field(curated.field_name):
+                continue
             if curated.field_name == "last_charge_kwh":
                 if total_charged_energy_kwh(points) is not None:
                     new_entities.append(EudaCuratedSensor(coordinator, curated))
@@ -116,6 +120,8 @@ async def async_setup_entry(
             if key in added_raw_keys:
                 continue
             if dp.field_name in curated_sensor_fields or dp.field_name in binary_fields:
+                continue
+            if is_raw_metadata_field(dp.field_name):
                 continue
             new_entities.append(EudaRawSensor(coordinator, key))
             added_raw_keys.add(key)
@@ -257,12 +263,22 @@ class EudaCuratedSensor(EudaEntity, SensorEntity):
         # otherwise use the static curated unit.
         cur = self._curated
         if cur.unit_field:
-            dp = find_by_field(self.coordinator.data or {}, cur.unit_field)
+            points = self.coordinator.data or {}
+            dp = find_by_field(points, cur.unit_field)
             if dp is not None:
                 resolver = UNIT_RESOLVERS.get(cur.unit_resolver, resolve_distance_unit)
                 resolved = resolver(dp.value)
                 if resolved:
-                    return resolved
+                    consider = resolved
+                    if cur.field_name == "battery_state_report.charge_rate":
+                        value_dp = find_by_field(points, cur.field_name)
+                        if value_dp is None or not is_usable_reading(
+                            value_dp.value, cur.field_name
+                        ):
+                            consider = None
+                    stable = self._sticky_unit(consider)
+                    if stable is not None:
+                        return stable
         return cur.unit
 
 
@@ -344,6 +360,13 @@ class EudaStatusSensor(EudaEntity, SensorEntity):
             attrs["latest_dataset_captured_at"] = (
                 self.coordinator.latest_dataset.captured_at.isoformat()
             )
+        if self.coordinator.latest_dataset_name:
+            attrs["latest_dataset_name"] = self.coordinator.latest_dataset_name
+        if self.coordinator.last_download_attempts:
+            attrs["last_download_attempts"] = self.coordinator.last_download_attempts
+        cached = self.coordinator.cached_datasets()
+        if cached:
+            attrs["cached_datasets"] = cached
         if self.coordinator.subscription_created_on:
             attrs["subscription_created_on"] = (
                 self.coordinator.subscription_created_on.isoformat()

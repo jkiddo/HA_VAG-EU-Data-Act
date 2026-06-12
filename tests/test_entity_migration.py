@@ -2,9 +2,29 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+from homeassistant.const import EntityCategory
+from homeassistant.helpers import entity_registry as er
+
 from custom_components.cupra_eu_data_act.entity_migration import (
+    entity_registry_updates,
     translation_key_for_unique_id,
 )
+
+
+def _entry(**kwargs) -> SimpleNamespace:
+    defaults = {
+        "domain": "sensor",
+        "unique_id": "WVWZZZTESTVIN0001_report_type",
+        "translation_key": None,
+        "entity_category": EntityCategory.DIAGNOSTIC,
+        "original_name": "report_type",
+        "disabled_by": None,
+        "name": None,
+    }
+    defaults.update(kwargs)
+    return SimpleNamespace(**defaults)
 
 
 def test_translation_key_for_curated_sensor() -> None:
@@ -71,4 +91,56 @@ def test_translation_key_for_flat_binary_sensor() -> None:
             "WVWZZZTESTVIN0001",
         )
         == "open_state_front_left_door"
+    )
+
+
+def test_migration_disables_car_captured_time_curated() -> None:
+    vin = "WVWZZZTESTVIN0001"
+    updates = entity_registry_updates(
+        _entry(
+            unique_id=f"{vin}_car_captured_time",
+            translation_key="car_captured_time",
+            entity_category=None,
+            original_name="Last telemetry",
+        ),
+        vin,
+    )
+    assert updates == {"disabled_by": er.RegistryEntryDisabler.INTEGRATION}
+
+
+def test_migration_disables_raw_report_type() -> None:
+    vin = "WVWZZZTESTVIN0001"
+    updates = entity_registry_updates(
+        _entry(
+            unique_id=f"{vin}_3dc12462-4854-3c9e-8428-a61d7c1c3297",
+            original_name="report_type",
+        ),
+        vin,
+    )
+    assert updates == {"disabled_by": er.RegistryEntryDisabler.INTEGRATION}
+
+
+def test_migration_disables_raw_timestamp() -> None:
+    vin = "WVWZZZTESTVIN0001"
+    updates = entity_registry_updates(
+        _entry(
+            unique_id=f"{vin}_75184561-67be-36ed-a951-d2b398cc256f",
+            original_name="timestamp",
+        ),
+        vin,
+    )
+    assert updates == {"disabled_by": er.RegistryEntryDisabler.INTEGRATION}
+
+
+def test_migration_keeps_non_metadata_raw() -> None:
+    vin = "WVWZZZTESTVIN0001"
+    assert (
+        entity_registry_updates(
+            _entry(
+                unique_id=f"{vin}_b24b8c24-662b-3540-9bf3-6ea953e5303e",
+                original_name="error_code",
+            ),
+            vin,
+        )
+        is None
     )

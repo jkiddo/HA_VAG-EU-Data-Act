@@ -76,5 +76,6 @@ async def test_diagnostics_includes_uncurated_sample(hass) -> None:
     result = await async_get_config_entry_diagnostics(hass, entry)
 
     assert result["uncurated_fields_sample"] is not None
-    assert "report_type" in result["uncurated_fields_sample"]
+    assert "report_type" not in result["uncurated_fields_sample"]
+    assert "range.unit" in result["uncurated_fields_sample"]
     assert len(result["uncurated_fields_sample"]) <= 20

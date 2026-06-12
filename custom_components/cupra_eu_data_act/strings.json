@@ -38,7 +38,7 @@
   },
   "exceptions": {
     "waiting_for_portal_data": {
-      "message": "Login successful — waiting for the first vehicle dataset from the EU Data Act portal. This is expected right after setup and is not a login error.\n\nOn the portal ({portal_url}), please check:\n• A continuous 15-minute data request is active for this vehicle\n• The vehicle is linked under Data clusters → Vehicle overview\n• The car has been online recently (ignition on or mobile app contact)\n\nFirst real data often arrives within 15–60 minutes, sometimes a few hours after enabling the request. Empty _no_content_found snapshots are normal when the car sent no telemetry in a 15-minute window; they are skipped automatically.\n\nHome Assistant retries every {retry_minutes} minute(s). You do not need to remove and re-add the integration."
+      "message": "Login successful — waiting for the first vehicle dataset from the EU Data Act portal. This is expected right after setup and is not a login error.\n\nOn the portal ({portal_url}), please check:\n• A continuous 15-minute data request is active for this vehicle\n• The dataset is **All Data** (not only Charging)\n• The vehicle is linked under Data clusters → Vehicle overview\n• The car has been online recently (ignition on or mobile app contact)\n\nFirst real data often arrives within 15–60 minutes, sometimes a few hours after enabling the request. Empty _no_content_found snapshots are normal when the car sent no telemetry in a 15-minute window; they are skipped automatically.\n\nHome Assistant retries every {retry_minutes} minute(s). You do not need to remove and re-add the integration."
     },
     "waiting_for_portal_data_empty_snapshots": {
       "message": "Login successful — the portal subscription is active, but only empty snapshots have been received so far ({empty_count} × _no_content_found). The vehicle sent no telemetry in those 15-minute windows yet.\n\nThis is not a Home Assistant or login error. On the portal ({portal_url}), confirm the continuous 15-minute request is enabled for this VIN and wake the car (drive, ignition, or open the mobile app) so it can upload data.\n\nThe next interval may contain real values. Home Assistant retries every {retry_minutes} minute(s) — no need to remove the integration."
@@ -75,7 +75,7 @@
     },
     "waiting_for_portal_data": {
       "title": "Waiting for first dataset for {vehicle}",
-      "description": "Login succeeded but no vehicle dataset has arrived yet. On the portal ({portal_url}), confirm a continuous 15-minute data request is active, the vehicle is linked under Data clusters, and the car has been online recently.\n\nFirst data often arrives within 15–60 minutes. Home Assistant retries every {retry_minutes} minute(s)."
+      "description": "Login succeeded but no vehicle dataset has arrived yet. On the portal ({portal_url}), confirm a continuous 15-minute data request is active (dataset: **All Data**, not only Charging), the vehicle is linked under Data clusters, and the car has been online recently.\n\nFirst data often arrives within 15–60 minutes. Home Assistant retries every {retry_minutes} minute(s)."
     },
     "empty_snapshots": {
       "title": "Only empty snapshots for {vehicle}",

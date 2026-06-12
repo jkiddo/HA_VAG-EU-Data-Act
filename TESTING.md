@@ -21,7 +21,10 @@ Thank you for helping test **VW Group EU Data Act** for Home Assistant.
 1. Log in at [eu-data-act.drivesomethinggreater.com](https://eu-data-act.drivesomethinggreater.com/)
 2. Connect your vehicle under **Data clusters → Vehicle overview**
 3. Create a **continuous 15-minute** data request
-4. Wait for ZIP files (first real data can take one or more intervals)
+4. Select **All Data** as the dataset — not only **Charging** (charging-only requests miss most sensors)
+5. Wait for ZIP files (first real data can take one or more intervals)
+
+**EU(27) only:** the portal service is intended for residents and vehicles registered in the EU(27). Accounts from outside the EU (e.g. Switzerland) may log in but often get no data delivery.
 
 ## Quick smoke test (no Home Assistant)
 

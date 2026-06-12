@@ -7,6 +7,9 @@ the dataset-listing and dataset-download paths.
 """
 from __future__ import annotations
 
+import io
+import json
+import zipfile
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -14,7 +17,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import UpdateFailed
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.cupra_eu_data_act.api import ApiError, AuthError
+from custom_components.cupra_eu_data_act.api import ApiError, AuthError, EudaApiClient
 from custom_components.cupra_eu_data_act.const import (
     CONF_IDENTIFIER,
     CONF_VIN,
@@ -22,6 +25,18 @@ from custom_components.cupra_eu_data_act.const import (
 )
 from custom_components.cupra_eu_data_act.coordinator import EudaCoordinator
 from custom_components.cupra_eu_data_act.data import DataPoint
+
+
+def _zip_bytes(payload: dict) -> bytes:
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("data.json", json.dumps(payload))
+    return buf.getvalue()
+
+
+def _mock_client_with_zip(client: MagicMock, payload: dict) -> None:
+    client.async_download_dataset_raw = AsyncMock(return_value=_zip_bytes(payload))
+    client.parse_dataset_zip = EudaApiClient.parse_dataset_zip
 
 
 def _make_coordinator(hass, client) -> EudaCoordinator:
@@ -57,7 +72,9 @@ async def test_auth_error_while_downloading_raises_reauth(hass) -> None:
             }
         ]
     )
-    client.async_download_dataset = AsyncMock(side_effect=AuthError("session expired"))
+    client.async_download_dataset_raw = AsyncMock(
+        side_effect=AuthError("session expired")
+    )
     coordinator = _make_coordinator(hass, client)
 
     with pytest.raises(ConfigEntryAuthFailed):
@@ -68,6 +85,9 @@ async def test_http_400_with_existing_data_keeps_previous(hass) -> None:
     client = MagicMock()
     client.async_list_datasets = AsyncMock(
         side_effect=ApiError("HTTP 400", status=400)
+    )
+    client.async_get_metadata = AsyncMock(
+        side_effect=ApiError("no metadata", status=400)
     )
     coordinator = _make_coordinator(hass, client)
     previous = {
@@ -95,8 +115,9 @@ async def test_merge_keeps_good_value_when_new_snapshot_has_sentinel(hass) -> No
             }
         ]
     )
-    client.async_download_dataset = AsyncMock(
-        return_value={
+    _mock_client_with_zip(
+        client,
+        {
             "user_id": "u1",
             "Data": [
                 {
@@ -105,7 +126,7 @@ async def test_merge_keeps_good_value_when_new_snapshot_has_sentinel(hass) -> No
                     "value": "4294967295",
                 }
             ],
-        }
+        },
     )
     coordinator = _make_coordinator(hass, client)
     coordinator.data = {
@@ -136,3 +157,41 @@ async def test_plain_api_error_does_not_raise_reauth(hass) -> None:
 
     with pytest.raises(UpdateFailed):
         await coordinator._async_update_data()
+
+
+async def test_successful_download_sets_latest_dataset_name(hass) -> None:
+    dataset_name = "WVWZZZTESTVIN0001_20260102000000.zip"
+    client = MagicMock()
+    client.async_list_datasets = AsyncMock(
+        return_value=[
+            {
+                "name": dataset_name,
+                "createdOn": "2026-01-02T00:00:00Z",
+            }
+        ]
+    )
+    _mock_client_with_zip(
+        client,
+        {
+            "user_id": "u1",
+            "Data": [
+                {
+                    "key": "key-1",
+                    "dataFieldName": "mileage",
+                    "value": "12345",
+                }
+            ],
+        },
+    )
+    coordinator = _make_coordinator(hass, client)
+
+    await coordinator._async_update_data()
+
+    assert coordinator.latest_dataset_name == dataset_name
+    assert len(coordinator.cached_datasets()) == 1
+    assert coordinator.cached_datasets()[0]["name"] == dataset_name
+    assert len(coordinator.last_download_attempts) == 1
+    assert coordinator.last_download_attempts[0]["name"] == dataset_name
+    assert coordinator.last_download_attempts[0]["success"] is True
+    assert coordinator.last_download_attempts[0]["error"] is None
+    assert coordinator.last_download_attempts[0]["at"]

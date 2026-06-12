@@ -18,6 +18,9 @@ class EudaEntity(CoordinatorEntity[EudaCoordinator]):
     def __init__(self, coordinator: EudaCoordinator) -> None:
         super().__init__(coordinator)
         self._last_value = None
+        self._last_resolved_unit: str | None = None
+        self._unit_confirm_count = 0
+        self._pending_unit: str | None = None
         vin = coordinator.vin
         name = coordinator.entry.data.get(CONF_NICKNAME) or vin
         brand = get_brand(coordinator.entry.data.get(CONF_BRAND, DEFAULT_BRAND))
@@ -45,6 +48,27 @@ class EudaEntity(CoordinatorEntity[EudaCoordinator]):
         """Return ``value``, or the last known value if this update omits it."""
         self._last_value = sticky(self._last_value, value)
         return self._last_value
+
+    def _sticky_unit(
+        self, resolved: str | None, *, confirm_required: int = 2
+    ) -> str | None:
+        """Return a stable unit, adopting changes only after consecutive confirmation."""
+        if resolved is None:
+            return self._last_resolved_unit
+        if resolved == self._last_resolved_unit:
+            self._unit_confirm_count = 0
+            self._pending_unit = None
+            return self._last_resolved_unit
+        if resolved == self._pending_unit:
+            self._unit_confirm_count += 1
+        else:
+            self._pending_unit = resolved
+            self._unit_confirm_count = 1
+        if self._unit_confirm_count >= confirm_required:
+            self._last_resolved_unit = resolved
+            self._unit_confirm_count = 0
+            self._pending_unit = None
+        return self._last_resolved_unit
 
     def _filtered(self, value, field_name: str | None = None):
         """Drop portal sentinels then apply sticky semantics.

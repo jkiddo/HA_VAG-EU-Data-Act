@@ -1,5 +1,143 @@
 # Release notes
 
+## v0.6.10 — Disable legacy meta/raw entities (2026-06-12)
+
+### Summary
+
+Existing portal metadata raw sensors and the legacy **Last telemetry** curated
+entity are now disabled in the entity registry on upgrade — not only blocked
+for new installs (P6 follow-up).
+
+### Registry migration
+
+- Disables legacy `{vin}_car_captured_time` (use **Last vehicle update**).
+- Disables existing raw diagnostic entities whose field name matches the
+  metadata blocklist (`message_id`, `report_type`, `timestamp`,
+  `car_captured_utc_timestamp`, `car_captured_time`, and dotted variants).
+- Bare `timestamp` is blocked; curated `mileage.value.timestamp` is not.
+
+Reload the integration once after updating to apply the migration.
+
+---
+
+## v0.6.9 — Timestamp entity consolidation (2026-06-12)
+
+### Summary
+
+Fewer duplicate timestamp and metadata sensors (upstream #23). Dedicated
+diagnostic sensors cover the same information without per-report raw copies.
+
+### Removed curated duplicates
+
+- `car_captured_time` (Last telemetry) — use **Last vehicle update**
+  (`last_vehicle_update`).
+- `mileage.value.timestamp` (Last connected legacy) — use **Last connected**
+  (`last_connected`).
+
+`instrument_cluster_time` (vehicle clock) is unchanged.
+
+### Metadata field blocklist
+
+- Raw diagnostic sensors are no longer created for portal metadata fields
+  (`message_id`, `report_type`, `car_captured_time`, and dotted variants).
+- `field_coverage` / **Uncurated fields count** excludes these intentionally
+  omitted fields.
+
+### Registry migration
+
+- Legacy curated `car_captured_time` entities are disabled on upgrade.
+- Existing `mileage.value.timestamp` / `mileage.timestamp` entities continue to
+  migrate to `last_connected`.
+
+---
+
+## v0.6.8 — Timestamp-aware ordering (2026-06-12)
+
+### Summary
+
+Sensor history no longer jumps backwards when the portal delivers duplicate
+fields or an older fallback dataset (upstream #24).
+
+### Freshest reading wins
+
+- `find_by_field` prefers the **freshest** matching data point (by its own
+  `timestampUtc` / captured time) instead of an arbitrary `min(key)`. When no
+  timestamps distinguish duplicates it still falls back to the stable
+  `min(key)` choice, so sensors don't flip-flop.
+- `merge_data_points` no longer regresses a usable value with an *older* one:
+  after a download failure that falls back to a previous dataset, a stale
+  snapshot can't overwrite fresher coordinator state.
+
+### Tests
+
+- Offline tests for freshest-duplicate selection, stable fallback, and the
+  merge freshness guard.
+
+---
+
+## v0.6.7 — Local ZIP cache (2026-06-12)
+
+### Summary
+
+Downloaded portal ZIP files are cached locally for debugging and support
+(upstream #31 part 2).
+
+### Local dataset cache
+
+- Successful downloads are stored under
+  `config/cupra_eu_data_act_cache/<hash>/` (VIN is hashed — not in the path).
+- Keeps the last **10** ZIPs per vehicle, max **50 MB** per vehicle; oldest
+  files are removed automatically.
+- **Integration status** attributes and diagnostics list cached filenames,
+  sizes, and timestamps.
+
+### API
+
+- `async_download_dataset_raw()` returns ZIP bytes; `parse_dataset_zip()` parses
+  them (coordinator caches before parsing).
+
+### Tests
+
+- `tests/test_cache.py` — rotation, unsafe-name rejection, size cap.
+
+---
+
+## v0.6.6 — Portal docs, charge-rate units & dataset metadata (2026-06-12)
+
+### Summary
+
+Addresses upstream feedback on portal setup (#14, #22), charge-rate unit
+flip-flopping (#30), and dataset traceability (#31 part 1).
+
+### Portal documentation
+
+- README and TESTING now recommend **All Data** (not Charging-only) for the
+  15-minute continuous request.
+- Limitations note: service targets EU(27) residents with EU(27)-registered
+  vehicles; accounts outside the EU may get no data delivery.
+- English setup/repair strings updated accordingly.
+
+### Charge rate unit stability
+
+- Curated sensors with dynamic units use `_sticky_unit()` — a new unit is
+  adopted only after two consecutive polls with the same enum.
+- For `battery_state_report.charge_rate`, unit changes are ignored when the
+  charge-rate value itself is missing or a portal sentinel.
+
+### Dataset metadata
+
+- Coordinator tracks `latest_dataset_name` and the last five download attempts
+  (success/failure, error, timestamp).
+- **Integration status** sensor and config-entry diagnostics expose these fields
+  for support without manual portal downloads.
+
+### Tests
+
+- Offline tests for sticky unit and charge-rate gating.
+- Coordinator test for successful download metadata.
+
+---
+
 ## v0.6.5 — Last-known values & last-connected fix (2026-06-12)
 
 ### Summary

@@ -117,14 +117,34 @@ def main() -> int:
         True,
     )
     check(
-        "car_captured_time curated",
+        "car_captured_time not curated (P6)",
         "car_captured_time" in data.CURATED_FIELDS,
-        True,
+        False,
     )
     check(
         "instrument_cluster_time curated",
         "instrument_cluster_time" in data.CURATED_FIELDS,
         True,
+    )
+    print("raw metadata field blocklist:")
+    check("report_type is metadata", data.is_raw_metadata_field("report_type"), True)
+    check("message_id is metadata", data.is_raw_metadata_field("message_id"), True)
+    check("bare timestamp is metadata", data.is_raw_metadata_field("timestamp"), True)
+    check(
+        "mileage.value.timestamp is not metadata",
+        data.is_raw_metadata_field("mileage.value.timestamp"),
+        False,
+    )
+    check(
+        "dotted car_captured_time is metadata",
+        data.is_raw_metadata_field("profile_state_report.car_captured_time"),
+        True,
+    )
+    check("soc is not metadata", data.is_raw_metadata_field("battery_state_report.soc"), False)
+    check(
+        "instrument_cluster_time is not metadata",
+        data.is_raw_metadata_field("instrument_cluster_time"),
+        False,
     )
     _charge_state = next(
         s
@@ -237,6 +257,62 @@ def main() -> int:
         data.find_by_field(points, "mileage").value,
         20717,
     )
+
+    # --- P5: timestamp-aware find_by_field & merge (issue #24) ------------
+    print("timestamp-aware find_by_field:")
+    dated = {
+        "old": data.DataPoint(
+            key="aaa",
+            field_name="mileage",
+            raw_value="100",
+            timestamp_utc="2026-01-01T10:00:00Z",
+        ),
+        "new": data.DataPoint(
+            key="zzz",
+            field_name="mileage",
+            raw_value="120",
+            timestamp_utc="2026-01-02T10:00:00Z",
+        ),
+    }
+    check(
+        "freshest duplicate wins over min(key)",
+        data.find_by_field(dated, "mileage").value,
+        120,
+    )
+    no_ts = {
+        "ccc": data.DataPoint("ccc", "mileage", "3"),
+        "aaa": data.DataPoint("aaa", "mileage", "1"),
+    }
+    check(
+        "no timestamps -> stable min(key)",
+        data.find_by_field(no_ts, "mileage").value,
+        1,
+    )
+
+    print("merge_data_points freshness guard:")
+    cur = data.DataPoint(
+        key="k", field_name="mileage", raw_value="120",
+        timestamp_utc="2026-01-02T10:00:00Z",
+    )
+    older = data.DataPoint(
+        key="k", field_name="mileage", raw_value="100",
+        timestamp_utc="2026-01-01T10:00:00Z",
+    )
+    newer = data.DataPoint(
+        key="k", field_name="mileage", raw_value="130",
+        timestamp_utc="2026-01-03T10:00:00Z",
+    )
+    check(
+        "older fallback does not regress mileage",
+        data.merge_data_points({"k": cur}, {"k": older})["k"].value,
+        120,
+    )
+    check(
+        "fresher snapshot updates mileage",
+        data.merge_data_points({"k": cur}, {"k": newer})["k"].value,
+        130,
+    )
+
     print("last_connected_time:")
     sample = json.loads(
         (Path(__file__).parent / "fixtures" / "sample_dataset.json").read_text()
@@ -402,7 +478,7 @@ def main() -> int:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
         zf.writestr("WVWZZZTESTVIN0001_x.json", json.dumps(sample))
-    parsed = api.EudaApiClient._unzip_json(buf.getvalue(), "x.zip")
+    parsed = api.EudaApiClient.parse_dataset_zip(buf.getvalue(), "x.zip")
     check("unzip vin", parsed["vin"], "WVWZZZTESTVIN0001")
     vins = api._extract_vins({"vehicles": [{"vin": "WVWZZZTESTVIN0001", "vehicleNickname": "Born"}]})
     check("extract_vins", vins, [{"vin": "WVWZZZTESTVIN0001", "nickname": "Born"}])
@@ -428,6 +504,128 @@ def main() -> int:
     fe, ae = api._login_fields(email_page)
     check("html-input _csrf not overridden", fe.get("_csrf"), "HC")
     check("html-input action", ae, "/x/login/identifier")
+
+    # --- sticky unit (mirrors EudaEntity._sticky_unit) --------------------
+    print("sticky unit:")
+
+    class _StickyUnitProbe:
+        """Offline stand-in for EudaEntity._sticky_unit (entity.py)."""
+
+        def __init__(self) -> None:
+            self._last_resolved_unit: str | None = None
+            self._unit_confirm_count = 0
+            self._pending_unit: str | None = None
+
+        def sticky_unit(
+            self, resolved: str | None, *, confirm_required: int = 2
+        ) -> str | None:
+            if resolved is None:
+                return self._last_resolved_unit
+            if resolved == self._last_resolved_unit:
+                self._unit_confirm_count = 0
+                self._pending_unit = None
+                return self._last_resolved_unit
+            if resolved == self._pending_unit:
+                self._unit_confirm_count += 1
+            else:
+                self._pending_unit = resolved
+                self._unit_confirm_count = 1
+            if self._unit_confirm_count >= confirm_required:
+                self._last_resolved_unit = resolved
+                self._unit_confirm_count = 0
+                self._pending_unit = None
+            return self._last_resolved_unit
+
+    probe = _StickyUnitProbe()
+    check("none resolved -> no unit yet", probe.sticky_unit(None), None)
+    check("first km/h not adopted yet", probe.sticky_unit("km/h"), None)
+    check("second km/h adopted", probe.sticky_unit("km/h"), "km/h")
+    check("same unit resets confirm", probe.sticky_unit("km/h"), "km/h")
+    check("single mi/h flip ignored", probe.sticky_unit("mi/h"), "km/h")
+    check("mi/h still pending after one", probe.sticky_unit("km/h"), "km/h")
+    check("mi/h adopted after two consecutive", probe.sticky_unit("mi/h"), "km/h")
+    check("mi/h adopted on second poll", probe.sticky_unit("mi/h"), "mi/h")
+    check("none keeps stable unit", probe.sticky_unit(None), "mi/h")
+
+    # --- charge rate unit resolution ----------------------------------------
+    print("charge rate unit resolution:")
+    check(
+        "KM_PER_H -> km/h",
+        data.resolve_charge_rate_unit("CHARGE_RATE_UNIT_KM_PER_H"),
+        "km/h",
+    )
+    check(
+        "MILES_PER_H -> mi/h",
+        data.resolve_charge_rate_unit("CHARGE_RATE_UNIT_MILES_PER_H"),
+        "mi/h",
+    )
+    charge_rate = next(
+        s
+        for s in data.CURATED_SENSORS_DOTTED
+        if s.field_name == "battery_state_report.charge_rate"
+    )
+    check("charge_rate declares unit_field", charge_rate.unit_field, "battery_state_report.charge_rate_unit")
+    check("charge_rate unit_resolver", charge_rate.unit_resolver, "charge_rate")
+
+    def _charge_rate_unit(
+        sticky: _StickyUnitProbe, value, unit_enum, *, usable_value=True
+    ):
+        """Inline gate matching EudaCuratedSensor.native_unit_of_measurement."""
+        value_raw = str(value) if usable_value else "4294967295"
+        ds_cr = data.Dataset.from_json(
+            {
+                "vin": "V",
+                "user_id": "u",
+                "Data": [
+                    {
+                        "key": "r1",
+                        "dataFieldName": "battery_state_report.charge_rate",
+                        "value": value_raw,
+                    },
+                    {
+                        "key": "u1",
+                        "dataFieldName": "battery_state_report.charge_rate_unit",
+                        "value": unit_enum,
+                    },
+                ],
+            }
+        )
+        pts = ds_cr.points
+        unit_dp = data.find_by_field(pts, charge_rate.unit_field)
+        resolved = data.resolve_charge_rate_unit(unit_dp.value)
+        value_dp = data.find_by_field(pts, charge_rate.field_name)
+        consider = resolved
+        if value_dp is None or not data.is_usable_reading(
+            value_dp.value, charge_rate.field_name
+        ):
+            consider = None
+        return sticky.sticky_unit(consider) or charge_rate.unit
+
+    probe = _StickyUnitProbe()
+    check(
+        "usable reading + two km/h polls",
+        (
+            _charge_rate_unit(probe, 42, "CHARGE_RATE_UNIT_KM_PER_H"),
+            _charge_rate_unit(probe, 42, "CHARGE_RATE_UNIT_KM_PER_H"),
+        ),
+        ("km/h", "km/h"),
+    )
+    probe = _StickyUnitProbe()
+    check(
+        "unusable value ignores unit flip",
+        (
+            _charge_rate_unit(probe, 0, "CHARGE_RATE_UNIT_KM_PER_H", usable_value=False),
+            _charge_rate_unit(probe, 0, "CHARGE_RATE_UNIT_MILES_PER_H", usable_value=False),
+        ),
+        ("km/h", "km/h"),
+    )
+    probe = _StickyUnitProbe()
+    _charge_rate_unit(probe, 10, "CHARGE_RATE_UNIT_KM_PER_H")
+    check(
+        "single spurious mi/h ignored when value usable",
+        _charge_rate_unit(probe, 10, "CHARGE_RATE_UNIT_MILES_PER_H"),
+        "km/h",
+    )
 
     # --- distance unit resolved from companion *.unit field ----------------
     print("distance unit resolution:")

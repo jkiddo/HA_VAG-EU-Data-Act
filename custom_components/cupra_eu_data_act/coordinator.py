@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import asyncio
 from datetime import datetime, timezone
+from pathlib import Path
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -13,12 +14,16 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import ApiError, AuthError, EudaApiClient
+from .cache import DatasetCache
 from .const import (
     BASE_URL,
+    CACHE_DIR_NAME,
     CONF_IDENTIFIER,
     CONF_VIN,
     DATASET_INTERVAL,
     DOMAIN,
+    MAX_CACHE_BYTES_PER_VIN,
+    MAX_CACHED_DATASETS,
     MIN_INTERVAL,
     NO_CONTENT_SUFFIX,
     POST_DATASET_BUFFER,
@@ -111,6 +116,55 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
         self.last_listing_content_at: datetime | None = None
         # When the portal generated the currently loaded dataset ZIP.
         self.dataset_created_at: datetime | None = None
+        self.latest_dataset_name: str | None = None
+        self.last_download_attempts: list[dict] = []
+        self._cache = DatasetCache(
+            Path(hass.config.path(CACHE_DIR_NAME)),
+            max_files=MAX_CACHED_DATASETS,
+            max_bytes_per_vin=MAX_CACHE_BYTES_PER_VIN,
+        )
+        # In-memory snapshot of the cache listing. Disk I/O only happens in the
+        # executor (after each store); sensor attributes read this without
+        # blocking the event loop.
+        self._cached_dataset_meta: list[dict] | None = None
+        # True when the last listing call failed but previous data was kept, so
+        # the no-content branch must not overwrite e.g. "delivery_not_ready".
+        self._listing_failed: bool = False
+
+    def cached_datasets(self) -> list[dict]:
+        """Return cached ZIP metadata (in-memory; safe in the event loop)."""
+        return self._cached_dataset_meta or []
+
+    def _store_in_cache(self, name: str, data: bytes) -> list[dict]:
+        """Write a ZIP and return fresh listing metadata (executor only)."""
+        self._cache.store(self.vin, name, data)
+        return [
+            {
+                "name": item.name,
+                "size": item.size,
+                "mtime": item.mtime.isoformat(),
+            }
+            for item in self._cache.list_entries(self.vin)
+        ]
+
+    def _record_download_attempt(
+        self,
+        name: str,
+        *,
+        success: bool,
+        error: str | None = None,
+    ) -> None:
+        """Append a download outcome; keep the last five for diagnostics."""
+        self.last_download_attempts.append(
+            {
+                "name": name,
+                "success": success,
+                "error": error,
+                "at": dt_util.utcnow().isoformat(),
+            }
+        )
+        if len(self.last_download_attempts) > 5:
+            self.last_download_attempts = self.last_download_attempts[-5:]
 
     @property
     def last_snapshot_at(self) -> datetime | None:
@@ -160,6 +214,7 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
             self.last_listing_content_at = max(content_timestamps)
 
     async def _async_update_data(self) -> dict[str, DataPoint]:
+        self._listing_failed = False
         listing = await self._async_list_with_refresh()
         self._update_listing_metadata(listing)
 
@@ -187,9 +242,13 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
         if not content:
             self._reschedule(listing)
             self.empty_snapshot_count = len(empty_only)
-            self.status_label = (
-                "empty_snapshots" if empty_only else "waiting_for_portal_data"
-            )
+            if not self._listing_failed:
+                # An empty listing caused by a failed list call must not mask
+                # the more specific status (e.g. "delivery_not_ready") set by
+                # _async_list_with_refresh.
+                self.status_label = (
+                    "empty_snapshots" if empty_only else "waiting_for_portal_data"
+                )
             if self.data:
                 # Subsequent refresh: keep previous data
                 _LOGGER.debug("No new datasets available, keeping previous data")
@@ -231,35 +290,45 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
         # Try to load datasets, starting with newest and falling back to older ones
         last_error = None
         for dataset_entry in reversed(content):
+            dataset_name = dataset_entry["name"]
             # Use fewer, faster retries during initial setup for better UX
             # Full retries kick in after first successful load
             max_retries = 3 if self._is_initial_setup else 5
             retry_delay = 3 if self._is_initial_setup else 5
+            entry_error: Exception | None = None
+            succeeded = False
 
             for attempt in range(max_retries):
                 try:
-                    payload = await self.client.async_download_dataset(
-                        self.vin, self.identifier, dataset_entry["name"]
+                    raw = await self.client.async_download_dataset_raw(
+                        self.vin, self.identifier, dataset_name
                     )
+                    self._cached_dataset_meta = await self.hass.async_add_executor_job(
+                        self._store_in_cache, dataset_name, raw
+                    )
+                    payload = self.client.parse_dataset_zip(raw, dataset_name)
                     self.latest_dataset = Dataset.from_json(payload)
+                    self.latest_dataset_name = dataset_name
                     self.dataset_created_at = (
                         _created_on(dataset_entry) or self.dataset_created_at
                     )
                     self._is_initial_setup = False
-                    last_error = None
-                    break  # Success!
+                    succeeded = True
+                    entry_error = None
+                    _LOGGER.info("Downloaded dataset %s", dataset_name)
+                    break
                 except AuthError as err:
                     # Session expired or credentials invalidated by the portal;
                     # trigger the HA reauth flow instead of silently retrying.
                     raise ConfigEntryAuthFailed(str(err)) from err
                 except ApiError as err:
-                    last_error = err
+                    entry_error = err
                     is_server_error = _is_server_error(err)
 
                     if is_server_error and attempt < max_retries - 1:
                         _LOGGER.debug(
                             "Server error downloading %s (attempt %d/%d): %s, retrying in %ds",
-                            dataset_entry["name"],
+                            dataset_name,
                             attempt + 1,
                             max_retries,
                             err,
@@ -268,22 +337,30 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
                         await asyncio.sleep(retry_delay)
                         continue
                     elif is_server_error:
-                        _LOGGER.debug(
+                        _LOGGER.warning(
                             "Server error downloading %s after %d attempts: %s, trying previous dataset",
-                            dataset_entry["name"],
+                            dataset_name,
                             max_retries,
                             err,
                         )
                         break
                     else:
-                        _LOGGER.debug(
-                            "Error downloading %s: %s", dataset_entry["name"], err
+                        _LOGGER.warning(
+                            "Error downloading %s: %s", dataset_name, err
                         )
                         break
 
-            if last_error is None:
+            self._record_download_attempt(
+                dataset_name,
+                success=succeeded,
+                error=str(entry_error) if entry_error else None,
+            )
+
+            if succeeded:
+                last_error = None
                 break
 
+            last_error = entry_error
             if last_error and not _is_server_error(last_error):
                 break
 
@@ -393,6 +470,7 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
                 self.update_interval = RETRY_INTERVAL
 
                 if self.data:
+                    self._listing_failed = True
                     if isinstance(last_error, ApiError) and last_error.status == 400:
                         self.status_label = "delivery_not_ready"
                     _LOGGER.warning(
