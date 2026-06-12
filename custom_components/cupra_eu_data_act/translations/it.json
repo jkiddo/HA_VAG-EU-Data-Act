@@ -81,6 +81,10 @@
       "title": "Solo snapshot vuoti per {vehicle}",
       "description": "L'abbonamento al portale è attivo ma finora sono stati ricevuti solo snapshot vuoti ({empty_count} × _no_content_found). Sveglia l'auto (guida, accensione o app) per caricare la telemetria.\n\nHome Assistant riprova ogni {retry_minutes} minuto/i. Portale: {portal_url}"
     },
+    "listing_failed": {
+      "title": "Impossibile elencare i dataset per {vehicle}",
+      "description": "Home Assistant non ha potuto elencare i dataset sul portale EU Data Act ({portal_url}) — di solito un'interruzione temporanea del portale (HTTP 5xx), non un problema di accesso o abbonamento.\n\nGli ultimi valori noti del veicolo vengono mantenuti. I tentativi rallentano automaticamente (5 → 15 → 30 minuti). Prossimo tentativo tra circa {retry_minutes} minuto/i."
+    },
     "subscription_expiring_soon": {
       "title": "Abbonamento portale in scadenza per {vehicle}",
       "description": "L'abbonamento al portale EU Data Act scadrà tra circa {days_until} giorno/i. La richiesta dati continua va rinnovata sul portale, altrimenti i dataset smetteranno di arrivare.\n\nApri il portale ({portal_url}) e rinnova l'abbonamento prima della scadenza."
@@ -177,6 +181,9 @@
       },
       "instrument_cluster_time": {
         "name": "Orologio veicolo"
+      },
+      "hv_battery_level": {
+        "name": "Livello batteria HV"
       },
       "bem_level": {
         "name": "Livello BEM"
@@ -353,7 +360,8 @@
           "ok": "OK",
           "waiting_for_portal_data": "In attesa di dati",
           "empty_snapshots": "Solo snapshot vuoti",
-          "delivery_not_ready": "Consegna non pronta"
+          "delivery_not_ready": "Consegna non pronta",
+          "listing_failed": "Elenco fallito"
         }
       },
       "charge_state": {
@@ -468,6 +476,9 @@
     "binary_sensor": {
       "locked": {
         "name": "Veicolo bloccato"
+      },
+      "open": {
+        "name": "Veicolo aperto"
       },
       "parking_brake": {
         "name": "Freno di stazionamento"

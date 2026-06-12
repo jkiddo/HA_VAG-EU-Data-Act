@@ -81,6 +81,10 @@
       "title": "Only empty snapshots for {vehicle}",
       "description": "The portal subscription is active but only empty snapshots have been received so far ({empty_count} × _no_content_found). Wake the car (drive, ignition, or mobile app) so it can upload telemetry.\n\nHome Assistant retries every {retry_minutes} minute(s). Portal: {portal_url}"
     },
+    "listing_failed": {
+      "title": "Cannot list datasets for {vehicle}",
+      "description": "Home Assistant could not list datasets on the EU Data Act portal ({portal_url}) — this is usually a temporary upstream outage (HTTP 5xx), not a login or subscription problem.\n\nYour last known vehicle values are kept. Retries slow down automatically after repeated errors (5 → 15 → 30 minutes). Next retry in about {retry_minutes} minute(s)."
+    },
     "subscription_expiring_soon": {
       "title": "Portal subscription expiring soon for {vehicle}",
       "description": "The EU Data Act portal subscription is estimated to expire in {days_until} day(s). Continuous data requests must be renewed on the portal or datasets will stop arriving.\n\nOpen the portal ({portal_url}) and renew the subscription before it lapses."
@@ -177,6 +181,9 @@
       },
       "instrument_cluster_time": {
         "name": "Vehicle clock"
+      },
+      "hv_battery_level": {
+        "name": "HV battery level"
       },
       "bem_level": {
         "name": "BEM level"
@@ -353,7 +360,8 @@
           "ok": "OK",
           "waiting_for_portal_data": "Waiting for data",
           "empty_snapshots": "Empty snapshots only",
-          "delivery_not_ready": "Delivery not ready"
+          "delivery_not_ready": "Delivery not ready",
+          "listing_failed": "Listing failed"
         }
       },
       "charge_state": {
@@ -468,6 +476,9 @@
     "binary_sensor": {
       "locked": {
         "name": "Vehicle locked"
+      },
+      "open": {
+        "name": "Vehicle open"
       },
       "parking_brake": {
         "name": "Parking brake"

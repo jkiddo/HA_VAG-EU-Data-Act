@@ -51,6 +51,12 @@ DATASET_INTERVAL = timedelta(minutes=15)
 POST_DATASET_BUFFER = timedelta(seconds=45)
 RETRY_INTERVAL = timedelta(minutes=1)
 MIN_INTERVAL = timedelta(seconds=30)
+# Backoff after repeated portal 5xx (listing or download); cap at 30 minutes.
+SERVER_ERROR_BACKOFF_INTERVALS = (
+    timedelta(minutes=5),
+    timedelta(minutes=15),
+    timedelta(minutes=30),
+)
 
 NO_CONTENT_SUFFIX = "_no_content_found.zip"
 

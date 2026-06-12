@@ -81,6 +81,10 @@
       "title": "Nur leere Schnappschüsse für {vehicle}",
       "description": "Portal-Abo aktiv, bisher nur leere Schnappschüsse ({empty_count} × _no_content_found). Auto aktivieren (fahren, Zündung oder App), damit Telemetrie hochgeladen wird.\n\nHome Assistant versucht es alle {retry_minutes} Minute(n) erneut. Portal: {portal_url}"
     },
+    "listing_failed": {
+      "title": "Datensatzliste für {vehicle} fehlgeschlagen",
+      "description": "Home Assistant konnte die Datensätze auf dem EU-Data-Act-Portal ({portal_url}) nicht abrufen — meist ein temporärer Portal-Ausfall (HTTP 5xx), kein Login- oder Abo-Problem.\n\nDie letzten bekannten Fahrzeugwerte bleiben erhalten. Wiederholte Fehler verlangsamen die Versuche automatisch (5 → 15 → 30 Minuten). Nächster Versuch in ca. {retry_minutes} Minute(n)."
+    },
     "subscription_expiring_soon": {
       "title": "Portal-Abo läuft bald ab für {vehicle}",
       "description": "Das EU-Data-Act-Portal-Abo läuft voraussichtlich in {days_until} Tag(en) ab. Die kontinuierliche Datenanfrage muss im Portal verlängert werden, sonst kommen keine Datensätze mehr.\n\nPortal öffnen ({portal_url}) und das Abo vor Ablauf erneuern."
@@ -177,6 +181,9 @@
       },
       "instrument_cluster_time": {
         "name": "Fahrzeuguhr"
+      },
+      "hv_battery_level": {
+        "name": "HV-Batteriestand"
       },
       "bem_level": {
         "name": "BEM-Level"
@@ -353,7 +360,8 @@
           "ok": "OK",
           "waiting_for_portal_data": "Warte auf Daten",
           "empty_snapshots": "Nur leere Schnappschüsse",
-          "delivery_not_ready": "Lieferung nicht bereit"
+          "delivery_not_ready": "Lieferung nicht bereit",
+          "listing_failed": "Auflistung fehlgeschlagen"
         }
       },
       "charge_state": {
@@ -468,6 +476,9 @@
     "binary_sensor": {
       "locked": {
         "name": "Fahrzeug verriegelt"
+      },
+      "open": {
+        "name": "Fahrzeug offen"
       },
       "parking_brake": {
         "name": "Feststellbremse"

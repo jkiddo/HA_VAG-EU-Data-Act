@@ -53,6 +53,23 @@ async def test_ok_clears_portal_issues(hass) -> None:
     )
 
 
+async def test_listing_failed_creates_issue(hass) -> None:
+    entry = _make_entry(hass)
+    coordinator = EudaCoordinator(hass, entry, MagicMock())
+    coordinator.status_label = "listing_failed"
+    coordinator.update_interval = __import__(
+        "datetime"
+    ).timedelta(minutes=15)
+
+    async_update_issues(hass, entry, coordinator)
+
+    registry = ir.async_get(hass)
+    issue = registry.async_get_issue(DOMAIN, f"{entry.entry_id}_listing_failed")
+    assert issue is not None
+    assert issue.severity == ir.IssueSeverity.WARNING
+    assert issue.translation_placeholders["retry_minutes"] == "15"
+
+
 async def test_unload_clears_all_issues(hass) -> None:
     entry = _make_entry(hass)
     client = MagicMock()

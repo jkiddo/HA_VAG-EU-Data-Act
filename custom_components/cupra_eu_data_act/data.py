@@ -958,6 +958,25 @@ CURATED_SENSORS_DOTTED: tuple[CuratedSensor, ...] = (
         transform="iso_timestamp",
         icon="mdi:car-clock",
     ),
+    CuratedSensor(
+        "profile_state_report.instrument_cluster_time",
+        "Vehicle clock",
+        "timestamp",
+        None,
+        None,
+        transform="iso_timestamp",
+        icon="mdi:car-clock",
+        translation_key="instrument_cluster_time",
+    ),
+    CuratedSensor(
+        "battery_level_HV.value",
+        "HV battery level",
+        "battery",
+        "%",
+        "measurement",
+        suggested_display_precision=1,
+        translation_key="hv_battery_level",
+    ),
     # === Enum/Status Sensors ===
     CuratedSensor(
         "charging_state_report.current_charge_state",
@@ -1031,6 +1050,13 @@ CURATED_SENSORS_DOTTED: tuple[CuratedSensor, ...] = (
 CURATED_BINARY_DOTTED: tuple[CuratedBinary, ...] = (
     # === General Lock State ===
     CuratedBinary("locked", "Vehicle locked", "lock", invert=True, icon="mdi:car-key"),
+    CuratedBinary(
+        "open",
+        "Vehicle open",
+        "door",
+        icon="mdi:car-door-open",
+        encoding="onoff",
+    ),
     # ID.x datasets carry a flat-named parking_brake field even though most of
     # their fields are dotted, so it belongs in the dotted group too.
     CuratedBinary(

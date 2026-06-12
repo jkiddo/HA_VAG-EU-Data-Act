@@ -1,5 +1,45 @@
 # Release notes
 
+## v0.6.12 — Cupra dotted field mappings (2026-06-12)
+
+### Summary
+
+Curated sensors for additional ID.x / Cupra fields seen in live cache ZIPs
+(upstream #2, iterative P7).
+
+### New curated entities
+
+- **`profile_state_report.instrument_cluster_time`** — vehicle clock (same as
+  flat `instrument_cluster_time`; shares translation).
+- **`battery_level_HV.value`** — HV battery level (%).
+- **`open`** (binary) — vehicle open status from bare `open` boolean field.
+
+### Tests
+
+- Fixture `tests/fixtures/cupra_dotted_uncurated_sample.json` and offline
+  coverage check.
+
+---
+
+## v0.6.11 — Portal backoff and listing status (2026-06-12)
+
+### Summary
+
+Clearer integration status when the portal listing API fails and slower retries
+after repeated upstream 5xx errors (upstream #17, #25).
+
+### Portal robustness
+
+- New status **`listing_failed`** when dataset listing fails (HTTP 5xx or other
+  non-400 errors) — distinct from **`waiting_for_portal_data`** (empty but
+  successful listing).
+- **`consecutive_server_errors`** counter with exponential backoff: next retry
+  after 5 → 15 → 30 minutes (cap). Resets on a successful dataset load.
+- Status sensor and diagnostics expose `consecutive_server_errors` and
+  `next_retry_minutes`. Repairs issue **`listing_failed`** links to the portal.
+
+---
+
 ## v0.6.10 — Disable legacy meta/raw entities (2026-06-12)
 
 ### Summary

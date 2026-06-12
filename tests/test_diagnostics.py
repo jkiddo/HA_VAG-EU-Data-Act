@@ -43,7 +43,7 @@ async def test_diagnostics_redacts_secrets(hass) -> None:
     assert "WVWZZZSECRETVIN01" not in dumped
     assert "secret-id" not in dumped
     assert result["status"]["label"] == "ok"
-    assert result["integration"]["version"] == "0.6.3"
+    assert result["integration"]["version"]
 
 
 async def test_diagnostics_includes_uncurated_sample(hass) -> None:

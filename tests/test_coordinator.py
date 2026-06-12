@@ -22,6 +22,7 @@ from custom_components.cupra_eu_data_act.const import (
     CONF_IDENTIFIER,
     CONF_VIN,
     DOMAIN,
+    SERVER_ERROR_BACKOFF_INTERVALS,
 )
 from custom_components.cupra_eu_data_act.coordinator import EudaCoordinator
 from custom_components.cupra_eu_data_act.data import DataPoint
@@ -195,3 +196,79 @@ async def test_successful_download_sets_latest_dataset_name(hass) -> None:
     assert coordinator.last_download_attempts[0]["success"] is True
     assert coordinator.last_download_attempts[0]["error"] is None
     assert coordinator.last_download_attempts[0]["at"]
+
+
+async def test_http_503_listing_sets_listing_failed_and_backoff(hass) -> None:
+    client = MagicMock()
+    client.async_list_datasets = AsyncMock(
+        side_effect=ApiError("HTTP 503", status=503)
+    )
+    client.async_get_metadata = AsyncMock(
+        side_effect=ApiError("no metadata", status=400)
+    )
+    coordinator = _make_coordinator(hass, client)
+    coordinator.data = {
+        "key-1": DataPoint(key="key-1", field_name="mileage", raw_value="1000")
+    }
+
+    result = await coordinator._async_update_data()
+
+    assert result is coordinator.data
+    assert coordinator.status_label == "listing_failed"
+    assert coordinator.consecutive_server_errors == 1
+    assert coordinator.update_interval == SERVER_ERROR_BACKOFF_INTERVALS[0]
+
+
+async def test_consecutive_503_increases_backoff(hass) -> None:
+    client = MagicMock()
+    client.async_list_datasets = AsyncMock(
+        side_effect=ApiError("HTTP 503", status=503)
+    )
+    client.async_get_metadata = AsyncMock(
+        side_effect=ApiError("no metadata", status=400)
+    )
+    coordinator = _make_coordinator(hass, client)
+    coordinator.data = {
+        "key-1": DataPoint(key="key-1", field_name="mileage", raw_value="1000")
+    }
+    coordinator._consecutive_server_errors = 1
+    coordinator.update_interval = SERVER_ERROR_BACKOFF_INTERVALS[0]
+
+    await coordinator._async_update_data()
+
+    assert coordinator.consecutive_server_errors == 2
+    assert coordinator.update_interval == SERVER_ERROR_BACKOFF_INTERVALS[1]
+
+
+async def test_successful_load_resets_server_error_backoff(hass) -> None:
+    dataset_name = "WVWZZZTESTVIN0001_20260102000000.zip"
+    client = MagicMock()
+    client.async_list_datasets = AsyncMock(
+        return_value=[
+            {
+                "name": dataset_name,
+                "createdOn": "2026-01-02T00:00:00Z",
+            }
+        ]
+    )
+    _mock_client_with_zip(
+        client,
+        {
+            "user_id": "u1",
+            "Data": [
+                {
+                    "key": "key-1",
+                    "dataFieldName": "mileage",
+                    "value": "12345",
+                }
+            ],
+        },
+    )
+    coordinator = _make_coordinator(hass, client)
+    coordinator._consecutive_server_errors = 2
+    coordinator.update_interval = SERVER_ERROR_BACKOFF_INTERVALS[1]
+
+    await coordinator._async_update_data()
+
+    assert coordinator.consecutive_server_errors == 0
+    assert coordinator.status_label == "ok"

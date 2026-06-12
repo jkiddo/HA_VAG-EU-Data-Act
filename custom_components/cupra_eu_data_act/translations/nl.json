@@ -81,6 +81,10 @@
       "title": "Alleen lege momentopnames voor {vehicle}",
       "description": "Portaal-abonnement is actief maar tot nu toe alleen lege momentopnames ontvangen ({empty_count} × _no_content_found). Activeer de auto (rijden, contact of app) om telemetrie te uploaden.\n\nHome Assistant probeert het elke {retry_minutes} minuut/minuten opnieuw. Portaal: {portal_url}"
     },
+    "listing_failed": {
+      "title": "Kan datasets niet opvragen voor {vehicle}",
+      "description": "Home Assistant kon geen datasets op het EU Data Act-portaal ({portal_url}) opvragen — meestal een tijdelijke storing (HTTP 5xx), geen inlog- of abonnementsprobleem.\n\nDe laatst bekende voertuigwaarden blijven behouden. Herhaalde fouten vertragen automatisch de pogingen (5 → 15 → 30 minuten). Volgende poging over ongeveer {retry_minutes} minuut/minuten."
+    },
     "subscription_expiring_soon": {
       "title": "Portaalabonnement verloopt binnenkort voor {vehicle}",
       "description": "Het EU Data Act-portaalabonnement verloopt naar schatting over {days_until} dag(en). Het continue dataverzoek moet op het portaal worden verlengd, anders stoppen de datasets.\n\nOpen het portaal ({portal_url}) en verleng het abonnement voordat het verloopt."
@@ -177,6 +181,9 @@
       },
       "instrument_cluster_time": {
         "name": "Voertuigklok"
+      },
+      "hv_battery_level": {
+        "name": "HV-accuniveau"
       },
       "bem_level": {
         "name": "BEM-niveau"
@@ -353,7 +360,8 @@
           "ok": "OK",
           "waiting_for_portal_data": "Wachten op gegevens",
           "empty_snapshots": "Alleen lege momentopnames",
-          "delivery_not_ready": "Levering niet gereed"
+          "delivery_not_ready": "Levering niet gereed",
+          "listing_failed": "Ophalen mislukt"
         }
       },
       "charge_state": {
@@ -468,6 +476,9 @@
     "binary_sensor": {
       "locked": {
         "name": "Voertuig vergrendeld"
+      },
+      "open": {
+        "name": "Voertuig open"
       },
       "parking_brake": {
         "name": "Parkeerrem"

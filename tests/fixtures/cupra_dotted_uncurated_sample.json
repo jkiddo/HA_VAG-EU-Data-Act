@@ -1,0 +1,20 @@
+{
+  "user_id": "fixture-user",
+  "Data": [
+    {
+      "key": "ict-1",
+      "dataFieldName": "profile_state_report.instrument_cluster_time",
+      "value": "2026-06-12T16:53:49.000+02:00"
+    },
+    {
+      "key": "hv-1",
+      "dataFieldName": "battery_level_HV.value",
+      "value": "45.0"
+    },
+    {
+      "key": "open-1",
+      "dataFieldName": "open",
+      "value": "True"
+    }
+  ]
+}

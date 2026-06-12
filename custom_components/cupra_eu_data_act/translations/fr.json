@@ -81,6 +81,10 @@
       "title": "Seulement des instantanés vides pour {vehicle}",
       "description": "L'abonnement au portail est actif mais seuls des instantanés vides ont été reçus ({empty_count} × _no_content_found). Réveillez la voiture (conduire, contact allumé ou application) pour envoyer de la télémétrie.\n\nHome Assistant réessaie toutes les {retry_minutes} minute(s). Portail : {portal_url}"
     },
+    "listing_failed": {
+      "title": "Impossible de lister les jeux de données pour {vehicle}",
+      "description": "Home Assistant n'a pas pu lister les jeux de données sur le portail EU Data Act ({portal_url}) — panne temporaire du portail (HTTP 5xx), pas un problème de connexion ou d'abonnement.\n\nLes dernières valeurs connues sont conservées. Les nouvelles tentatives ralentissent automatiquement (5 → 15 → 30 minutes). Prochaine tentative dans environ {retry_minutes} minute(s)."
+    },
     "subscription_expiring_soon": {
       "title": "Abonnement portail bientôt expiré pour {vehicle}",
       "description": "L'abonnement au portail EU Data Act devrait expirer dans {days_until} jour(s). La demande de données continues doit être renouvelée sur le portail, sinon les jeux de données cesseront d'arriver.\n\nOuvrez le portail ({portal_url}) et renouvelez l'abonnement avant son expiration."
@@ -177,6 +181,9 @@
       },
       "instrument_cluster_time": {
         "name": "Horloge véhicule"
+      },
+      "hv_battery_level": {
+        "name": "Niveau batterie HT"
       },
       "bem_level": {
         "name": "Niveau BEM"
@@ -353,7 +360,8 @@
           "ok": "OK",
           "waiting_for_portal_data": "En attente de données",
           "empty_snapshots": "Instantanés vides uniquement",
-          "delivery_not_ready": "Livraison pas prête"
+          "delivery_not_ready": "Livraison pas prête",
+          "listing_failed": "Échec de la liste"
         }
       },
       "charge_state": {
@@ -468,6 +476,9 @@
     "binary_sensor": {
       "locked": {
         "name": "Véhicule verrouillé"
+      },
+      "open": {
+        "name": "Véhicule ouvert"
       },
       "parking_brake": {
         "name": "Frein de stationnement"

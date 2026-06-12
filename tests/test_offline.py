@@ -146,6 +146,28 @@ def main() -> int:
         data.is_raw_metadata_field("instrument_cluster_time"),
         False,
     )
+    print("cupra dotted extras curated:")
+    check(
+        "profile ict curated",
+        "profile_state_report.instrument_cluster_time" in data.CURATED_FIELDS,
+        True,
+    )
+    check(
+        "hv battery level curated",
+        "battery_level_HV.value" in data.CURATED_FIELDS,
+        True,
+    )
+    check(
+        "open binary curated",
+        "open" in {b.field_name for b in data.CURATED_BINARY_DOTTED},
+        True,
+    )
+    check("open bool decode", data.decode_binary_state(True, encoding="onoff"), True)
+    extras_ds = data.Dataset.from_json(
+        json.loads((FIXTURES / "cupra_dotted_uncurated_sample.json").read_text())
+    )
+    extras_cov = data.field_coverage(extras_ds.points)
+    check("extras fixture fully curated", extras_cov["uncurated_count"], 0)
     _charge_state = next(
         s
         for s in data.CURATED_SENSORS_DOTTED

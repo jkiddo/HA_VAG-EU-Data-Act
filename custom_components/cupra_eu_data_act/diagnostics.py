@@ -28,6 +28,7 @@ TO_REDACT = {
     CONF_PASSWORD,
     CONF_VIN,
     CONF_IDENTIFIER,
+    "listing_identifier",
     "user_id",
 }
 
@@ -50,6 +51,10 @@ async def async_get_config_entry_diagnostics(
         "status": {
             "label": coordinator.status_label,
             "empty_snapshot_count": coordinator.empty_snapshot_count,
+            "consecutive_server_errors": coordinator.consecutive_server_errors,
+            "next_retry_minutes": int(
+                coordinator.update_interval.total_seconds() // 60
+            ),
             "has_data": bool(points),
             "dataset_format": detect_dataset_format(points) if points else None,
             "subscription_created_on": (

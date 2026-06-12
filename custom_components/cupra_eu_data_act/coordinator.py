@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from homeassistant.config_entries import ConfigEntry
@@ -28,6 +28,7 @@ from .const import (
     NO_CONTENT_SUFFIX,
     POST_DATASET_BUFFER,
     RETRY_INTERVAL,
+    SERVER_ERROR_BACKOFF_INTERVALS,
     SUBSCRIPTION_VALIDITY,
 )
 from .data import Dataset, DataPoint, latest_captured_time, merge_data_points
@@ -130,10 +131,41 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
         # True when the last listing call failed but previous data was kept, so
         # the no-content branch must not overwrite e.g. "delivery_not_ready".
         self._listing_failed: bool = False
+        # Consecutive refresh cycles that ended in a portal 5xx without new data.
+        self._consecutive_server_errors: int = 0
 
     def cached_datasets(self) -> list[dict]:
         """Return cached ZIP metadata (in-memory; safe in the event loop)."""
         return self._cached_dataset_meta or []
+
+    @property
+    def consecutive_server_errors(self) -> int:
+        """Portal 5xx streak without a successful dataset load."""
+        return self._consecutive_server_errors
+
+    def _server_error_backoff_interval(self) -> timedelta:
+        """Map consecutive 5xx count to 5 → 15 → 30 minute retry spacing."""
+        if self._consecutive_server_errors <= 0:
+            return RETRY_INTERVAL
+        index = min(
+            self._consecutive_server_errors - 1,
+            len(SERVER_ERROR_BACKOFF_INTERVALS) - 1,
+        )
+        return SERVER_ERROR_BACKOFF_INTERVALS[index]
+
+    def _note_server_error(self) -> None:
+        """Slow down polling after a transient portal outage."""
+        self._consecutive_server_errors += 1
+        self.update_interval = self._server_error_backoff_interval()
+        _LOGGER.debug(
+            "Portal server error streak %d; next retry in %s",
+            self._consecutive_server_errors,
+            self.update_interval,
+        )
+
+    def _reset_server_error_backoff(self) -> None:
+        """Restore normal scheduling after a successful dataset load."""
+        self._consecutive_server_errors = 0
 
     def _store_in_cache(self, name: str, data: bytes) -> list[dict]:
         """Write a ZIP and return fresh listing metadata (executor only)."""
@@ -240,7 +272,10 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
         )
 
         if not content:
-            self._reschedule(listing)
+            # Listing API failures already set a server-error backoff interval;
+            # do not overwrite it with the normal empty-listing schedule.
+            if not self._listing_failed:
+                self._reschedule(listing)
             self.empty_snapshot_count = len(empty_only)
             if not self._listing_failed:
                 # An empty listing caused by a failed list call must not mask
@@ -366,14 +401,18 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
 
         # If all downloads failed
         if last_error:
-            self.update_interval = RETRY_INTERVAL
+            if _is_server_error(last_error):
+                self._note_server_error()
+            else:
+                self.update_interval = RETRY_INTERVAL
             if self.data:
                 # Subsequent refresh: keep previous data on failure
                 _LOGGER.debug(
                     "Could not download any dataset (last error: %s), keeping previous data",
                     last_error,
                 )
-                self._reschedule(listing)
+                if not _is_server_error(last_error):
+                    self._reschedule(listing)
                 return self.data
             # First load failure: raise so HA retries setup
             _LOGGER.error(
@@ -386,6 +425,7 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
             ) from last_error
 
         self._reschedule(listing)
+        self._reset_server_error_backoff()
         self.status_label = "ok"
         self.empty_snapshot_count = 0
 
@@ -467,12 +507,17 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
 
             # All attempts failed
             if last_error:
-                self.update_interval = RETRY_INTERVAL
+                if _is_server_error(last_error):
+                    self._note_server_error()
+                else:
+                    self.update_interval = RETRY_INTERVAL
 
                 if self.data:
                     self._listing_failed = True
                     if isinstance(last_error, ApiError) and last_error.status == 400:
                         self.status_label = "delivery_not_ready"
+                    else:
+                        self.status_label = "listing_failed"
                     _LOGGER.warning(
                         "Failed to list datasets after %d attempts: %s. "
                         "Keeping previous data.",
@@ -493,6 +538,9 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
                             ),
                         },
                     ) from last_error
+
+                if _is_server_error(last_error):
+                    self.status_label = "listing_failed"
 
                 raise UpdateFailed(str(last_error)) from last_error
 

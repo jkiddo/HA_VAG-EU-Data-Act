@@ -355,6 +355,10 @@ class EudaStatusSensor(EudaEntity, SensorEntity):
     def extra_state_attributes(self) -> dict:
         attrs: dict = {
             "empty_snapshot_count": self.coordinator.empty_snapshot_count,
+            "consecutive_server_errors": self.coordinator.consecutive_server_errors,
+            "next_retry_minutes": int(
+                self.coordinator.update_interval.total_seconds() // 60
+            ),
         }
         if self.coordinator.latest_dataset and self.coordinator.latest_dataset.captured_at:
             attrs["latest_dataset_captured_at"] = (

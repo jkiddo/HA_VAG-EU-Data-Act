@@ -10,7 +10,6 @@ from .const import (
     BASE_URL,
     CONF_NICKNAME,
     DOMAIN,
-    RETRY_INTERVAL,
     SNAPSHOT_STALE_THRESHOLD,
     SUBSCRIPTION_WARNING_BEFORE,
 )
@@ -22,6 +21,7 @@ _ISSUE_STATUSES: frozenset[str] = frozenset(
         "delivery_not_ready",
         "waiting_for_portal_data",
         "empty_snapshots",
+        "listing_failed",
     }
 )
 
@@ -34,7 +34,8 @@ _HEALTH_ISSUE_KEYS: frozenset[str] = frozenset(
 
 _ALL_ISSUE_KEYS: frozenset[str] = _ISSUE_STATUSES | _HEALTH_ISSUE_KEYS
 
-_RETRY_MINUTES = str(int(RETRY_INTERVAL.total_seconds() // 60))
+def _retry_minutes(coordinator: EudaCoordinator) -> str:
+    return str(int(coordinator.update_interval.total_seconds() // 60))
 
 
 def _issue_id(entry_id: str, status: str) -> str:
@@ -57,7 +58,7 @@ def async_update_issues(
 
         placeholders: dict[str, str] = {
             "portal_url": BASE_URL,
-            "retry_minutes": _RETRY_MINUTES,
+            "retry_minutes": _retry_minutes(coordinator),
             "vehicle": vehicle,
         }
         if issue_status == "empty_snapshots":
