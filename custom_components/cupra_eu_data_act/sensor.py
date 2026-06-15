@@ -29,6 +29,7 @@ from .data import (
     friendly_name,
     is_raw_metadata_field,
     is_sentinel,
+    is_superseded_instrument_cluster_field,
     is_usable_reading,
     last_connected_time,
     latest_captured_time,
@@ -100,6 +101,10 @@ async def async_setup_entry(
             if curated.field_name in _LAST_CONNECTED_CURATED_FIELDS:
                 continue
             if is_raw_metadata_field(curated.field_name):
+                continue
+            if is_superseded_instrument_cluster_field(
+                curated.field_name, present_fields
+            ):
                 continue
             if curated.field_name == "last_charge_kwh":
                 if total_charged_energy_kwh(points) is not None:

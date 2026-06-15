@@ -1,5 +1,47 @@
 # Release notes
 
+## v0.6.16 — Timestamp labels & vehicle clock dedup (2026-06-15)
+
+### Summary
+
+Localized names for the dedicated timestamp sensors, consolidation of duplicate
+**Vehicle clock** entities on Cupra/MEB cars, and curated PHEV flat-format
+charging enums/binary sensors.
+
+### Timestamp sensor localization
+
+- **`last_vehicle_update`**, **`last_connected`**, and **`dataset_generated`**
+  now have proper names in `de`, `en`, `fr`, `it`, and `nl` (no more generic
+  “Timestamp” fallback in German).
+
+Addresses [#12](https://github.com/TommiG1/HA_VAG-EU-Data-Act/issues/12).
+
+### Vehicle clock deduplication
+
+Cupra/MEB payloads often expose both `instrument_cluster_time` and
+`profile_state_report.instrument_cluster_time` with the same value, which
+created duplicate curated sensors.
+
+- Discovery prefers the dotted field when both are present; bare-only dotted
+  cars still get a curated **Vehicle clock**.
+- Registry migration disables legacy bare curated duplicates and old raw
+  diagnostic copies when the dotted sensor exists.
+
+### PHEV flat-format sensors
+
+- Curated enum sensors: `charging_state`, `charging_mode`,
+  `charging_reason_trigger`, `last_battery_charger_update_trigger`.
+- Curated binary sensors with string encodings: window heating front/rear,
+  charging LED, energy flow, plug state, central lock.
+- Localized names and enum state labels in all supported languages.
+
+### Tests
+
+- Entity migration coverage for instrument-cluster dedup.
+- Offline checks for PHEV flat binary/enum registration and string decoders.
+
+---
+
 ## v0.6.15 — Last charge sensor state class (2026-06-14)
 
 ### Summary

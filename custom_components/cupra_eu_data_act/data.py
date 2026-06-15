@@ -364,6 +364,16 @@ RAW_METADATA_SUFFIXES = frozenset(
 )
 
 
+def is_superseded_instrument_cluster_field(
+    field_name: str, present_field_names: set[str] | frozenset[str]
+) -> bool:
+    """True when bare instrument_cluster_time duplicates the dotted Cupra field."""
+    return (
+        field_name == "instrument_cluster_time"
+        and "profile_state_report.instrument_cluster_time" in present_field_names
+    )
+
+
 def is_raw_metadata_field(field_name: str) -> bool:
     """True when a field is portal metadata, not a user-facing reading."""
     if field_name in RAW_METADATA_EXACT:
@@ -749,6 +759,9 @@ def decode_binary_state(
                  doors, windows, sunroofs and lock/safe states.
       "onoff"  - 0 = off, 1 = on (e.g. parking_brake).
       "lights" - 0/1 = unsupported/invalid; 2 = off; 3/4/5 = on (parking_lights).
+      "string_onoff" - ``"on"`` / ``"off"`` (case-insensitive; PHEV flat fields).
+      "plug"   - ``"connected"`` / ``"disconnected"`` (``plug_state``).
+      "string_lock" - ``"locked"`` / ``"unlocked"`` (``lock_state``).
 
     Plain booleans are returned as-is regardless of ``encoding``. ``invert``
     flips a decoded True/False (a "lock" sensor reads on when *un*locked); it
@@ -757,6 +770,31 @@ def decode_binary_state(
     """
     if isinstance(value, bool):
         result: bool | None = value
+    elif isinstance(value, str):
+        text = value.strip().lower()
+        if encoding == "string_onoff":
+            if text == "on":
+                result = True
+            elif text == "off":
+                result = False
+            else:
+                result = None
+        elif encoding == "plug":
+            if text == "connected":
+                result = True
+            elif text == "disconnected":
+                result = False
+            else:
+                result = None
+        elif encoding == "string_lock":
+            if text == "locked":
+                result = True
+            elif text == "unlocked":
+                result = False
+            else:
+                result = None
+        else:
+            result = None
     elif isinstance(value, int):
         if encoding == "onoff":
             result = value == 1
@@ -985,6 +1023,9 @@ CURATED_SENSORS_DOTTED: tuple[CuratedSensor, ...] = (
         "max_temperature", "Battery max temperature", "temperature", "°C", "measurement"
     ),
     # === Vehicle Status ===
+    # Both the bare and dotted field names occur on dotted (ID.x/Cupra) cars.
+    # Some payloads carry only one of them, so keep both registered; discovery
+    # skips the bare one when the dotted field is also present (see sensor.py).
     CuratedSensor(
         "instrument_cluster_time",
         "Vehicle clock",
@@ -993,6 +1034,7 @@ CURATED_SENSORS_DOTTED: tuple[CuratedSensor, ...] = (
         None,
         transform="iso_timestamp",
         icon="mdi:car-clock",
+        translation_key="instrument_cluster_time",
     ),
     CuratedSensor(
         "profile_state_report.instrument_cluster_time",
@@ -1606,6 +1648,16 @@ CURATED_SENSORS_FLAT: tuple[CuratedSensor, ...] = (
     ),
     # === Vehicle Status ===
     CuratedSensor(
+        "instrument_cluster_time",
+        "Vehicle clock",
+        "timestamp",
+        None,
+        None,
+        transform="iso_timestamp",
+        icon="mdi:car-clock",
+        translation_key="instrument_cluster_time",
+    ),
+    CuratedSensor(
         "mileage.timestamp",
         "Last connected",
         "timestamp",
@@ -1613,7 +1665,31 @@ CURATED_SENSORS_FLAT: tuple[CuratedSensor, ...] = (
         None,
         icon="mdi:clock",
     ),
-    # === Enum/Status Sensors ===
+    # === Enum/Status Sensors (PHEV flat string enums) ===
+    CuratedSensor(
+        "charging_state",
+        "Charge state",
+        icon="mdi:ev-station",
+        translation_key="charging_state",
+    ),
+    CuratedSensor(
+        "charging_mode",
+        "Charge mode",
+        icon="mdi:ev-station",
+        translation_key="charging_mode",
+    ),
+    CuratedSensor(
+        "charging_reason_trigger",
+        "Charging reason",
+        icon="mdi:timer-outline",
+        translation_key="charging_reason_trigger",
+    ),
+    CuratedSensor(
+        "last_battery_charger_update_trigger",
+        "Charger update trigger",
+        icon="mdi:flash",
+        translation_key="last_battery_charger_update_trigger",
+    ),
     CuratedSensor(
         "window_heating_state",
         "Window heating",
@@ -1773,6 +1849,49 @@ CURATED_BINARY_FLAT: tuple[CuratedBinary, ...] = (
     CuratedBinary("state_of_hood", "Hood state", None, icon="mdi:car"),
     CuratedBinary("state_service_hatch", "Service hatch", None, icon="mdi:gas-station"),
     CuratedBinary("state_spoiler", "Spoiler", None, icon="mdi:car-sports"),
+    # === PHEV flat string booleans ===
+    CuratedBinary(
+        "window_heating_state_front",
+        "Window heating front",
+        "heat",
+        icon="mdi:car-defrost-rear",
+        encoding="string_onoff",
+    ),
+    CuratedBinary(
+        "window_heating_state_rear",
+        "Window heating rear",
+        "heat",
+        icon="mdi:car-defrost-rear",
+        encoding="string_onoff",
+    ),
+    CuratedBinary(
+        "led_state",
+        "Charging LED",
+        None,
+        icon="mdi:led-outline",
+        encoding="string_onoff",
+    ),
+    CuratedBinary(
+        "energy_flow",
+        "Energy flow",
+        "power",
+        icon="mdi:transmission-tower",
+        encoding="string_onoff",
+    ),
+    CuratedBinary(
+        "plug_state",
+        "Charging plug",
+        "plug",
+        icon="mdi:ev-plug-type2",
+        encoding="plug",
+    ),
+    CuratedBinary(
+        "lock_state",
+        "Central lock",
+        "lock",
+        icon="mdi:lock",
+        encoding="string_lock",
+    ),
 )
 
 # ---------------------------------------------------------------------------

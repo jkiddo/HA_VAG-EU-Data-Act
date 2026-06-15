@@ -182,9 +182,6 @@
       "instrument_cluster_time": {
         "name": "Vehicle clock"
       },
-      "hv_battery_level": {
-        "name": "HV battery level"
-      },
       "bem_level": {
         "name": "BEM level"
       },
@@ -335,20 +332,20 @@
       "last_charge_kwh": {
         "name": "Last charge"
       },
+      "last_connected": {
+        "name": "Last connected"
+      },
+      "last_vehicle_update": {
+        "name": "Last vehicle update"
+      },
+      "dataset_generated": {
+        "name": "Dataset generated"
+      },
       "days_until_subscription_expires": {
         "name": "Days until subscription expires"
       },
       "minutes_since_last_snapshot": {
         "name": "Minutes since last snapshot"
-      },
-      "last_vehicle_update": {
-        "name": "Last vehicle update"
-      },
-      "last_connected": {
-        "name": "Last connected"
-      },
-      "dataset_generated": {
-        "name": "Dataset generated"
       },
       "uncurated_fields_count": {
         "name": "Uncurated fields"
@@ -360,8 +357,7 @@
           "ok": "OK",
           "waiting_for_portal_data": "Waiting for data",
           "empty_snapshots": "Empty snapshots only",
-          "delivery_not_ready": "Delivery not ready",
-          "listing_failed": "Listing failed"
+          "delivery_not_ready": "Delivery not ready"
         }
       },
       "charge_state": {
@@ -470,6 +466,39 @@
         "state": {
           "WINDOW_HEATING_STATE_OFF": "Off",
           "WINDOW_HEATING_STATE_ON": "On"
+        }
+      },
+      "charging_state": {
+        "name": "Charge state",
+        "state": {
+          "off": "Off",
+          "charging": "Charging",
+          "error": "Error",
+          "conserving": "Conserving"
+        }
+      },
+      "charging_mode": {
+        "name": "Charge mode",
+        "state": {
+          "off": "Off",
+          "manual": "Manual",
+          "timer1": "Timer 1",
+          "timer2": "Timer 2",
+          "invalid": "Invalid"
+        }
+      },
+      "charging_reason_trigger": {
+        "name": "Charging reason",
+        "state": {
+          "timer1": "Timer 1",
+          "timer2": "Timer 2",
+          "immediate": "Immediate"
+        }
+      },
+      "last_battery_charger_update_trigger": {
+        "name": "Charger update trigger",
+        "state": {
+          "clamp15Off": "Clamp 15 off"
         }
       }
     },
@@ -590,6 +619,24 @@
       },
       "state_spoiler": {
         "name": "Spoiler"
+      },
+      "window_heating_state_front": {
+        "name": "Window heating front"
+      },
+      "window_heating_state_rear": {
+        "name": "Window heating rear"
+      },
+      "led_state": {
+        "name": "Charging LED"
+      },
+      "energy_flow": {
+        "name": "Energy flow"
+      },
+      "plug_state": {
+        "name": "Charging plug"
+      },
+      "lock_state": {
+        "name": "Central lock"
       }
     }
   }

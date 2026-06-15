@@ -182,9 +182,6 @@
       "instrument_cluster_time": {
         "name": "Voertuigklok"
       },
-      "hv_battery_level": {
-        "name": "HV-accuniveau"
-      },
       "bem_level": {
         "name": "BEM-niveau"
       },
@@ -335,20 +332,20 @@
       "last_charge_kwh": {
         "name": "Laatste lading"
       },
+      "last_connected": {
+        "name": "Laatst verbonden"
+      },
+      "last_vehicle_update": {
+        "name": "Laatste voertuigupdate"
+      },
+      "dataset_generated": {
+        "name": "Dataset gegenereerd"
+      },
       "days_until_subscription_expires": {
         "name": "Dagen tot abonnement verloopt"
       },
       "minutes_since_last_snapshot": {
         "name": "Minuten sinds laatste snapshot"
-      },
-      "last_vehicle_update": {
-        "name": "Laatste voertuigupdate"
-      },
-      "last_connected": {
-        "name": "Laatst verbonden"
-      },
-      "dataset_generated": {
-        "name": "Dataset gegenereerd"
       },
       "uncurated_fields_count": {
         "name": "Niet-gecureerde velden"
@@ -360,8 +357,7 @@
           "ok": "OK",
           "waiting_for_portal_data": "Wachten op gegevens",
           "empty_snapshots": "Alleen lege momentopnames",
-          "delivery_not_ready": "Levering niet gereed",
-          "listing_failed": "Ophalen mislukt"
+          "delivery_not_ready": "Levering niet gereed"
         }
       },
       "charge_state": {
@@ -470,6 +466,39 @@
         "state": {
           "WINDOW_HEATING_STATE_OFF": "Uit",
           "WINDOW_HEATING_STATE_ON": "Aan"
+        }
+      },
+      "charging_state": {
+        "name": "Laadstatus",
+        "state": {
+          "off": "Uit",
+          "charging": "Laden",
+          "error": "Fout",
+          "conserving": "Behoud"
+        }
+      },
+      "charging_mode": {
+        "name": "Laadmodus",
+        "state": {
+          "off": "Uit",
+          "manual": "Handmatig",
+          "timer1": "Timer 1",
+          "timer2": "Timer 2",
+          "invalid": "Ongeldig"
+        }
+      },
+      "charging_reason_trigger": {
+        "name": "Laadreden",
+        "state": {
+          "timer1": "Timer 1",
+          "timer2": "Timer 2",
+          "immediate": "Direct"
+        }
+      },
+      "last_battery_charger_update_trigger": {
+        "name": "Laadpaal-update trigger",
+        "state": {
+          "clamp15Off": "Klem 15 uit"
         }
       }
     },
@@ -590,6 +619,24 @@
       },
       "state_spoiler": {
         "name": "Spoiler"
+      },
+      "window_heating_state_front": {
+        "name": "Ruitverwarming voor"
+      },
+      "window_heating_state_rear": {
+        "name": "Ruitverwarming achter"
+      },
+      "led_state": {
+        "name": "Laad-LED"
+      },
+      "energy_flow": {
+        "name": "Energiestroom"
+      },
+      "plug_state": {
+        "name": "Laadstekker"
+      },
+      "lock_state": {
+        "name": "Centrale vergrendeling"
       }
     }
   }

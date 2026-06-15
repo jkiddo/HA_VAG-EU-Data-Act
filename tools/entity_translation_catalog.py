@@ -547,6 +547,141 @@ SENSORS: dict[str, dict] = {
             },
         },
     },
+    "charging_state": {
+        "names": {
+            "en": "Charge state",
+            "de": "Ladestatus",
+            "fr": "État de charge",
+            "it": "Stato di carica",
+            "nl": "Laadstatus",
+        },
+        "states": {
+            "off": {
+                "en": "Off",
+                "de": "Aus",
+                "fr": "Arrêt",
+                "it": "Spento",
+                "nl": "Uit",
+            },
+            "charging": {
+                "en": "Charging",
+                "de": "Lädt",
+                "fr": "En charge",
+                "it": "In carica",
+                "nl": "Laden",
+            },
+            "error": {
+                "en": "Error",
+                "de": "Fehler",
+                "fr": "Erreur",
+                "it": "Errore",
+                "nl": "Fout",
+            },
+            "conserving": {
+                "en": "Conserving",
+                "de": "Erhaltung",
+                "fr": "Conservation",
+                "it": "Conservazione",
+                "nl": "Behoud",
+            },
+        },
+    },
+    "charging_mode": {
+        "names": {
+            "en": "Charge mode",
+            "de": "Lademodus",
+            "fr": "Mode de charge",
+            "it": "Modalità di carica",
+            "nl": "Laadmodus",
+        },
+        "states": {
+            "off": {
+                "en": "Off",
+                "de": "Aus",
+                "fr": "Arrêt",
+                "it": "Spento",
+                "nl": "Uit",
+            },
+            "manual": {
+                "en": "Manual",
+                "de": "Manuell",
+                "fr": "Manuel",
+                "it": "Manuale",
+                "nl": "Handmatig",
+            },
+            "timer1": {
+                "en": "Timer 1",
+                "de": "Timer 1",
+                "fr": "Minuterie 1",
+                "it": "Timer 1",
+                "nl": "Timer 1",
+            },
+            "timer2": {
+                "en": "Timer 2",
+                "de": "Timer 2",
+                "fr": "Minuterie 2",
+                "it": "Timer 2",
+                "nl": "Timer 2",
+            },
+            "invalid": {
+                "en": "Invalid",
+                "de": "Ungültig",
+                "fr": "Invalide",
+                "it": "Non valido",
+                "nl": "Ongeldig",
+            },
+        },
+    },
+    "charging_reason_trigger": {
+        "names": {
+            "en": "Charging reason",
+            "de": "Ladeauslöser",
+            "fr": "Motif de charge",
+            "it": "Motivo di carica",
+            "nl": "Laadreden",
+        },
+        "states": {
+            "timer1": {
+                "en": "Timer 1",
+                "de": "Timer 1",
+                "fr": "Minuterie 1",
+                "it": "Timer 1",
+                "nl": "Timer 1",
+            },
+            "timer2": {
+                "en": "Timer 2",
+                "de": "Timer 2",
+                "fr": "Minuterie 2",
+                "it": "Timer 2",
+                "nl": "Timer 2",
+            },
+            "immediate": {
+                "en": "Immediate",
+                "de": "Sofort",
+                "fr": "Immédiat",
+                "it": "Immediato",
+                "nl": "Direct",
+            },
+        },
+    },
+    "last_battery_charger_update_trigger": {
+        "names": {
+            "en": "Charger update trigger",
+            "de": "Ladegerät-Aktualisierung",
+            "fr": "Déclencheur MAJ chargeur",
+            "it": "Trigger aggiornamento caricatore",
+            "nl": "Laadpaal-update trigger",
+        },
+        "states": {
+            "clamp15Off": {
+                "en": "Clamp 15 off",
+                "de": "Klemme 15 aus",
+                "fr": "Contact 15 coupé",
+                "it": "Clamp 15 spento",
+                "nl": "Klem 15 uit",
+            },
+        },
+    },
 }
 
 # field_name -> translation_key (curated enum sensors)
@@ -564,6 +699,10 @@ FIELD_TRANSLATION_KEYS: dict[str, str] = {
         "charging_timer_reachability"
     ),
     "window_heating_state": "window_heating_state",
+    "charging_state": "charging_state",
+    "charging_mode": "charging_mode",
+    "charging_reason_trigger": "charging_reason_trigger",
+    "last_battery_charger_update_trigger": "last_battery_charger_update_trigger",
 }
 
 

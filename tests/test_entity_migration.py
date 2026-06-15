@@ -108,6 +108,50 @@ def test_migration_disables_car_captured_time_curated() -> None:
     assert updates == {"disabled_by": er.RegistryEntryDisabler.INTEGRATION}
 
 
+def test_migration_disables_bare_instrument_cluster_when_dotted_exists() -> None:
+    vin = "WVWZZZTESTVIN0001"
+    updates = entity_registry_updates(
+        _entry(
+            unique_id=f"{vin}_instrument_cluster_time",
+            translation_key="instrument_cluster_time",
+            entity_category=None,
+            original_name="Vehicle clock",
+        ),
+        vin,
+        has_dotted_instrument_cluster=True,
+    )
+    assert updates == {"disabled_by": er.RegistryEntryDisabler.INTEGRATION}
+
+
+def test_migration_keeps_bare_instrument_cluster_for_flat_cars() -> None:
+    vin = "WVWZZZTESTVIN0001"
+    assert (
+        entity_registry_updates(
+            _entry(
+                unique_id=f"{vin}_instrument_cluster_time",
+                translation_key="instrument_cluster_time",
+                entity_category=None,
+                original_name="Vehicle clock",
+            ),
+            vin,
+            has_dotted_instrument_cluster=False,
+        )
+        is None
+    )
+
+
+def test_migration_disables_raw_instrument_cluster_duplicate() -> None:
+    vin = "WVWZZZTESTVIN0001"
+    updates = entity_registry_updates(
+        _entry(
+            unique_id=f"{vin}_f295ae23-0485-3ccb-830b-58c644a04f2e",
+            original_name="profile_state_report.instrument_cluster_time",
+        ),
+        vin,
+    )
+    assert updates == {"disabled_by": er.RegistryEntryDisabler.INTEGRATION}
+
+
 def test_migration_disables_raw_report_type() -> None:
     vin = "WVWZZZTESTVIN0001"
     updates = entity_registry_updates(

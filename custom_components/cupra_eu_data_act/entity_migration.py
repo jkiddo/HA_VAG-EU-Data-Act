@@ -50,8 +50,16 @@ def translation_key_for_unique_id(unique_id: str, vin: str) -> str | None:
     )
 
 
+_INSTRUMENT_CLUSTER_RAW_NAMES = frozenset(
+    {"instrument_cluster_time", "profile_state_report.instrument_cluster_time"}
+)
+
+
 def entity_registry_updates(
-    reg_entry: er.RegistryEntry, vin: str
+    reg_entry: er.RegistryEntry,
+    vin: str,
+    *,
+    has_dotted_instrument_cluster: bool = False,
 ) -> dict | None:
     """Return registry updates for one entity, or None if unchanged."""
     if reg_entry.domain not in ("sensor", "binary_sensor"):
@@ -67,6 +75,21 @@ def entity_registry_updates(
         if reg_entry.disabled_by is None:
             return {"disabled_by": er.RegistryEntryDisabler.INTEGRATION}
         return None
+
+    if (
+        reg_entry.unique_id == f"{vin}_instrument_cluster_time"
+        and has_dotted_instrument_cluster
+        and reg_entry.disabled_by is None
+    ):
+        return {"disabled_by": er.RegistryEntryDisabler.INTEGRATION}
+
+    if (
+        reg_entry.domain == "sensor"
+        and reg_entry.translation_key is None
+        and reg_entry.original_name in _INSTRUMENT_CLUSTER_RAW_NAMES
+        and reg_entry.disabled_by is None
+    ):
+        return {"disabled_by": er.RegistryEntryDisabler.INTEGRATION}
 
     if (
         reg_entry.domain == "sensor"
@@ -96,9 +119,18 @@ async def async_migrate_entity_translations(
     Also disables legacy duplicate timestamp/meta entities (upstream #23).
     """
     vin = entry.data[CONF_VIN]
+    registry = er.async_get(hass)
+    has_dotted_instrument_cluster = any(
+        reg.unique_id == f"{vin}_profile_state_report.instrument_cluster_time"
+        for reg in er.async_entries_for_config_entry(registry, entry.entry_id)
+    )
 
     @callback
     def _migrate(reg_entry: er.RegistryEntry) -> dict | None:
-        return entity_registry_updates(reg_entry, vin)
+        return entity_registry_updates(
+            reg_entry,
+            vin,
+            has_dotted_instrument_cluster=has_dotted_instrument_cluster,
+        )
 
     await er.async_migrate_entries(hass, entry.entry_id, _migrate)

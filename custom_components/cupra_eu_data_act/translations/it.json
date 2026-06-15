@@ -182,9 +182,6 @@
       "instrument_cluster_time": {
         "name": "Orologio veicolo"
       },
-      "hv_battery_level": {
-        "name": "Livello batteria HV"
-      },
       "bem_level": {
         "name": "Livello BEM"
       },
@@ -335,20 +332,20 @@
       "last_charge_kwh": {
         "name": "Ultima carica"
       },
+      "last_connected": {
+        "name": "Ultima connessione"
+      },
+      "last_vehicle_update": {
+        "name": "Ultimo aggiornamento veicolo"
+      },
+      "dataset_generated": {
+        "name": "Dataset generato"
+      },
       "days_until_subscription_expires": {
         "name": "Giorni alla scadenza abbonamento"
       },
       "minutes_since_last_snapshot": {
         "name": "Minuti dall'ultimo snapshot"
-      },
-      "last_vehicle_update": {
-        "name": "Ultimo aggiornamento veicolo"
-      },
-      "last_connected": {
-        "name": "Ultima connessione"
-      },
-      "dataset_generated": {
-        "name": "Dataset generato"
       },
       "uncurated_fields_count": {
         "name": "Campi non curati"
@@ -360,8 +357,7 @@
           "ok": "OK",
           "waiting_for_portal_data": "In attesa di dati",
           "empty_snapshots": "Solo snapshot vuoti",
-          "delivery_not_ready": "Consegna non pronta",
-          "listing_failed": "Elenco fallito"
+          "delivery_not_ready": "Consegna non pronta"
         }
       },
       "charge_state": {
@@ -470,6 +466,39 @@
         "state": {
           "WINDOW_HEATING_STATE_OFF": "Spento",
           "WINDOW_HEATING_STATE_ON": "Acceso"
+        }
+      },
+      "charging_state": {
+        "name": "Stato di carica",
+        "state": {
+          "off": "Spento",
+          "charging": "In carica",
+          "error": "Errore",
+          "conserving": "Conservazione"
+        }
+      },
+      "charging_mode": {
+        "name": "Modalità di carica",
+        "state": {
+          "off": "Spento",
+          "manual": "Manuale",
+          "timer1": "Timer 1",
+          "timer2": "Timer 2",
+          "invalid": "Non valido"
+        }
+      },
+      "charging_reason_trigger": {
+        "name": "Motivo di carica",
+        "state": {
+          "timer1": "Timer 1",
+          "timer2": "Timer 2",
+          "immediate": "Immediato"
+        }
+      },
+      "last_battery_charger_update_trigger": {
+        "name": "Trigger aggiornamento caricatore",
+        "state": {
+          "clamp15Off": "Clamp 15 spento"
         }
       }
     },
@@ -590,6 +619,24 @@
       },
       "state_spoiler": {
         "name": "Spoiler"
+      },
+      "window_heating_state_front": {
+        "name": "Riscaldamento vetro anteriore"
+      },
+      "window_heating_state_rear": {
+        "name": "Riscaldamento vetro posteriore"
+      },
+      "led_state": {
+        "name": "LED di carica"
+      },
+      "energy_flow": {
+        "name": "Flusso di energia"
+      },
+      "plug_state": {
+        "name": "Presa di ricarica"
+      },
+      "lock_state": {
+        "name": "Blocco centralizzato"
       }
     }
   }

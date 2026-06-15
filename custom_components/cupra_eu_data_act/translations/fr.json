@@ -182,9 +182,6 @@
       "instrument_cluster_time": {
         "name": "Horloge véhicule"
       },
-      "hv_battery_level": {
-        "name": "Niveau batterie HT"
-      },
       "bem_level": {
         "name": "Niveau BEM"
       },
@@ -335,20 +332,20 @@
       "last_charge_kwh": {
         "name": "Dernière charge"
       },
+      "last_connected": {
+        "name": "Dernière connexion"
+      },
+      "last_vehicle_update": {
+        "name": "Dernière mise à jour véhicule"
+      },
+      "dataset_generated": {
+        "name": "Jeu de données généré"
+      },
       "days_until_subscription_expires": {
         "name": "Jours avant expiration de l'abonnement"
       },
       "minutes_since_last_snapshot": {
         "name": "Minutes depuis le dernier instantané"
-      },
-      "last_vehicle_update": {
-        "name": "Dernière mise à jour véhicule"
-      },
-      "last_connected": {
-        "name": "Dernière connexion"
-      },
-      "dataset_generated": {
-        "name": "Jeu de données généré"
       },
       "uncurated_fields_count": {
         "name": "Champs non traités"
@@ -360,8 +357,7 @@
           "ok": "OK",
           "waiting_for_portal_data": "En attente de données",
           "empty_snapshots": "Instantanés vides uniquement",
-          "delivery_not_ready": "Livraison pas prête",
-          "listing_failed": "Échec de la liste"
+          "delivery_not_ready": "Livraison pas prête"
         }
       },
       "charge_state": {
@@ -470,6 +466,39 @@
         "state": {
           "WINDOW_HEATING_STATE_OFF": "Arrêt",
           "WINDOW_HEATING_STATE_ON": "Marche"
+        }
+      },
+      "charging_state": {
+        "name": "État de charge",
+        "state": {
+          "off": "Arrêt",
+          "charging": "En charge",
+          "error": "Erreur",
+          "conserving": "Conservation"
+        }
+      },
+      "charging_mode": {
+        "name": "Mode de charge",
+        "state": {
+          "off": "Arrêt",
+          "manual": "Manuel",
+          "timer1": "Minuterie 1",
+          "timer2": "Minuterie 2",
+          "invalid": "Invalide"
+        }
+      },
+      "charging_reason_trigger": {
+        "name": "Motif de charge",
+        "state": {
+          "timer1": "Minuterie 1",
+          "timer2": "Minuterie 2",
+          "immediate": "Immédiat"
+        }
+      },
+      "last_battery_charger_update_trigger": {
+        "name": "Déclencheur MAJ chargeur",
+        "state": {
+          "clamp15Off": "Contact 15 coupé"
         }
       }
     },
@@ -590,6 +619,24 @@
       },
       "state_spoiler": {
         "name": "Spoiler"
+      },
+      "window_heating_state_front": {
+        "name": "Chauffage vitre avant"
+      },
+      "window_heating_state_rear": {
+        "name": "Chauffage vitre arrière"
+      },
+      "led_state": {
+        "name": "LED de charge"
+      },
+      "energy_flow": {
+        "name": "Flux d'énergie"
+      },
+      "plug_state": {
+        "name": "Prise de charge"
+      },
+      "lock_state": {
+        "name": "Verrouillage central"
       }
     }
   }

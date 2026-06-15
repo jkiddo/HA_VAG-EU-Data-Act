@@ -422,6 +422,54 @@ def main() -> int:
     )
     check("string -> None", data.decode_binary_state("OFF"), None)
     check("None -> None", data.decode_binary_state(None), None)
+    check(
+        "string_onoff on -> True",
+        data.decode_binary_state("on", encoding="string_onoff"),
+        True,
+    )
+    check(
+        "string_onoff off -> False",
+        data.decode_binary_state("OFF", encoding="string_onoff"),
+        False,
+    )
+    check(
+        "plug connected -> True",
+        data.decode_binary_state("connected", encoding="plug"),
+        True,
+    )
+    check(
+        "plug disconnected -> False",
+        data.decode_binary_state("disconnected", encoding="plug"),
+        False,
+    )
+    check(
+        "string_lock locked -> True",
+        data.decode_binary_state("locked", encoding="string_lock"),
+        True,
+    )
+    check(
+        "string_lock unlocked -> False",
+        data.decode_binary_state("unlocked", encoding="string_lock"),
+        False,
+    )
+    check(
+        "PHEV flat binary fields registered",
+        {
+            "window_heating_state_front",
+            "plug_state",
+            "lock_state",
+        }.issubset({b.field_name for b in data.CURATED_BINARY_FLAT}),
+        True,
+    )
+    check(
+        "PHEV flat enum sensors registered",
+        {
+            "charging_state",
+            "charging_mode",
+            "charging_reason_trigger",
+        }.issubset({s.field_name for s in data.CURATED_SENSORS_FLAT}),
+        True,
+    )
 
     # --- enum label shortening -------------------------------------------
     print("enum label shortening:")

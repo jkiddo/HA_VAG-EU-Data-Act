@@ -14,6 +14,12 @@ _BY_ENGLISH: dict[str, dict[str, str]] = {
         "it": "Veicolo bloccato",
         "nl": "Voertuig vergrendeld",
     },
+    "Vehicle open": {
+        "de": "Fahrzeug offen",
+        "fr": "Véhicule ouvert",
+        "it": "Veicolo aperto",
+        "nl": "Voertuig open",
+    },
     "Parking brake": {
         "de": "Feststellbremse",
         "fr": "Frein de stationnement",
@@ -236,11 +242,48 @@ _BY_ENGLISH: dict[str, dict[str, str]] = {
         "it": "Spoiler",
         "nl": "Spoiler",
     },
+    "Window heating front": {
+        "de": "Scheibenheizung vorne",
+        "fr": "Chauffage vitre avant",
+        "it": "Riscaldamento vetro anteriore",
+        "nl": "Ruitverwarming voor",
+    },
+    "Window heating rear": {
+        "de": "Scheibenheizung hinten",
+        "fr": "Chauffage vitre arrière",
+        "it": "Riscaldamento vetro posteriore",
+        "nl": "Ruitverwarming achter",
+    },
+    "Charging LED": {
+        "de": "Lade-LED",
+        "fr": "LED de charge",
+        "it": "LED di carica",
+        "nl": "Laad-LED",
+    },
+    "Energy flow": {
+        "de": "Energiefluss",
+        "fr": "Flux d'énergie",
+        "it": "Flusso di energia",
+        "nl": "Energiestroom",
+    },
+    "Charging plug": {
+        "de": "Ladeplug",
+        "fr": "Prise de charge",
+        "it": "Presa di ricarica",
+        "nl": "Laadstekker",
+    },
+    "Central lock": {
+        "de": "Zentralverriegelung",
+        "fr": "Verrouillage central",
+        "it": "Blocco centralizzato",
+        "nl": "Centrale vergrendeling",
+    },
 }
 
 # translation_key -> English name (all curated binary sensors)
 _BINARY_KEYS: dict[str, str] = {
     "locked": "Vehicle locked",
+    "open": "Vehicle open",
     "parking_brake": "Parking brake",
     "parking_light_left": "Parking light left",
     "parking_light_right": "Parking light right",
@@ -280,6 +323,12 @@ _BINARY_KEYS: dict[str, str] = {
     "state_of_hood": "Hood state",
     "state_service_hatch": "Service hatch",
     "state_spoiler": "Spoiler",
+    "window_heating_state_front": "Window heating front",
+    "window_heating_state_rear": "Window heating rear",
+    "led_state": "Charging LED",
+    "energy_flow": "Energy flow",
+    "plug_state": "Charging plug",
+    "lock_state": "Central lock",
 }
 
 

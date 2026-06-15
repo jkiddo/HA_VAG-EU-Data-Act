@@ -182,9 +182,6 @@
       "instrument_cluster_time": {
         "name": "Fahrzeuguhr"
       },
-      "hv_battery_level": {
-        "name": "HV-Batteriestand"
-      },
       "bem_level": {
         "name": "BEM-Level"
       },
@@ -335,20 +332,20 @@
       "last_charge_kwh": {
         "name": "Letzte Ladung"
       },
+      "last_connected": {
+        "name": "Zuletzt verbunden"
+      },
+      "last_vehicle_update": {
+        "name": "Letztes Fahrzeug-Update"
+      },
+      "dataset_generated": {
+        "name": "Datensatz erzeugt"
+      },
       "days_until_subscription_expires": {
         "name": "Tage bis Abo endet"
       },
       "minutes_since_last_snapshot": {
         "name": "Minuten seit letztem Snapshot"
-      },
-      "last_vehicle_update": {
-        "name": "Letztes Fahrzeug-Update"
-      },
-      "last_connected": {
-        "name": "Zuletzt verbunden"
-      },
-      "dataset_generated": {
-        "name": "Datensatz erzeugt"
       },
       "uncurated_fields_count": {
         "name": "Nicht kuratierte Felder"
@@ -360,8 +357,7 @@
           "ok": "OK",
           "waiting_for_portal_data": "Warte auf Daten",
           "empty_snapshots": "Nur leere Schnappschüsse",
-          "delivery_not_ready": "Lieferung nicht bereit",
-          "listing_failed": "Auflistung fehlgeschlagen"
+          "delivery_not_ready": "Lieferung nicht bereit"
         }
       },
       "charge_state": {
@@ -470,6 +466,39 @@
         "state": {
           "WINDOW_HEATING_STATE_OFF": "Aus",
           "WINDOW_HEATING_STATE_ON": "An"
+        }
+      },
+      "charging_state": {
+        "name": "Ladestatus",
+        "state": {
+          "off": "Aus",
+          "charging": "Lädt",
+          "error": "Fehler",
+          "conserving": "Erhaltung"
+        }
+      },
+      "charging_mode": {
+        "name": "Lademodus",
+        "state": {
+          "off": "Aus",
+          "manual": "Manuell",
+          "timer1": "Timer 1",
+          "timer2": "Timer 2",
+          "invalid": "Ungültig"
+        }
+      },
+      "charging_reason_trigger": {
+        "name": "Ladeauslöser",
+        "state": {
+          "timer1": "Timer 1",
+          "timer2": "Timer 2",
+          "immediate": "Sofort"
+        }
+      },
+      "last_battery_charger_update_trigger": {
+        "name": "Ladegerät-Aktualisierung",
+        "state": {
+          "clamp15Off": "Klemme 15 aus"
         }
       }
     },
@@ -590,6 +619,24 @@
       },
       "state_spoiler": {
         "name": "Spoiler"
+      },
+      "window_heating_state_front": {
+        "name": "Scheibenheizung vorne"
+      },
+      "window_heating_state_rear": {
+        "name": "Scheibenheizung hinten"
+      },
+      "led_state": {
+        "name": "Lade-LED"
+      },
+      "energy_flow": {
+        "name": "Energiefluss"
+      },
+      "plug_state": {
+        "name": "Ladeplug"
+      },
+      "lock_state": {
+        "name": "Zentralverriegelung"
       }
     }
   }
