@@ -635,6 +635,10 @@ _FIELD_SENTINELS: dict[str, frozenset[float]] = {
     "remaining_charging_time_target_soc": frozenset({-1}),
 }
 
+# VW tyre-pressure fields encode validity, not pressure: 0 = unsupported,
+# 1 = invalid, otherwise the reading is a pressure value (issue #14).
+_TYRE_PRESSURE_STATUS_CODES: frozenset[float] = frozenset({0, 1})
+
 
 def is_sentinel(value, field_name: str | None = None) -> bool:
     """Return True if ``value`` is a portal sentinel for "no reading".
@@ -651,6 +655,12 @@ def is_sentinel(value, field_name: str | None = None) -> bool:
     if as_float in _GLOBAL_NUMERIC_SENTINELS:
         return True
     if field_name and as_float in _FIELD_SENTINELS.get(field_name, frozenset()):
+        return True
+    if (
+        field_name
+        and field_name.startswith("tyre_pressure_")
+        and as_float in _TYRE_PRESSURE_STATUS_CODES
+    ):
         return True
     return False
 

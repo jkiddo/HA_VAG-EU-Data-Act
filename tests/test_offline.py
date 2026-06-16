@@ -385,6 +385,26 @@ def main() -> int:
         data.is_sentinel(2147483647),
         True,
     )
+    check(
+        "tyre pressure 1 = invalid (issue #14)",
+        data.is_sentinel(1, "tyre_pressure_actual_front_left"),
+        True,
+    )
+    check(
+        "tyre pressure 0 = unsupported",
+        data.is_sentinel(0, "tyre_pressure_actual_front_right"),
+        True,
+    )
+    check(
+        "tyre pressure 24 bar plausible",
+        data.is_sentinel(24, "tyre_pressure_actual_front_left"),
+        False,
+    )
+    check(
+        "tyre pressure 1 not sentinel without field name",
+        data.is_sentinel(1),
+        False,
+    )
 
     # --- binary decoding --------------------------------------------------
     print("binary decoding:")
