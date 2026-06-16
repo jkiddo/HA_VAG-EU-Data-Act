@@ -1,5 +1,38 @@
 # Release notes
 
+## v0.6.18 — Tyre pressure validity fix (2026-06-16)
+
+### Summary
+
+Fixes curated tyre-pressure sensors showing **1 bar** when the portal reports
+no valid per-wheel reading.
+
+### Tyre pressure validity codes
+
+VW `tyre_pressure_*` fields encode validity, not pressure directly:
+
+- `0` = unsupported
+- `1` = invalid
+- any other integer = actual pressure reading
+
+The integration now treats `0` and `1` as **unavailable** instead of displaying
+them as bar values. Affected sensors include `tyre_pressure_actual_*` and
+`tyre_pressure_differential_*`.
+
+Addresses [#14](https://github.com/TommiG1/HA_VAG-EU-Data-Act/issues/14).
+
+**Note:** Per-wheel pressure is only available on vehicles with **direct TPMS**
+(pressure sensors in the wheel valves). Many VAG cars use **indirect** monitoring
+(RKA, via ABS wheel-speed sensors), which detects pressure loss but does not
+expose individual bar/psi readings — in that case these sensors will correctly
+stay unavailable.
+
+### Tests
+
+- Offline sentinel checks for tyre-pressure validity codes `0` and `1`.
+
+---
+
 ## v0.6.17 — Cache restore, charging time fixes & HV battery label (2026-06-16)
 
 ### Summary
