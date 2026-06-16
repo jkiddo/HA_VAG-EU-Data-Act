@@ -226,6 +226,7 @@ class DataPoint:
     description: str | None = None
     cluster: str | None = None
     timestamp_utc: str | None = None
+    sequence: int = 0
 
     @property
     def value(self):
@@ -258,7 +259,7 @@ class Dataset:
         dictionary = load_dictionary()
         points: dict[str, DataPoint] = {}
         captured: list[datetime] = []
-        for item in payload.get("Data", []):
+        for sequence, item in enumerate(payload.get("Data", [])):
             key = item.get("key")
             if not key:
                 continue
@@ -271,6 +272,7 @@ class Dataset:
                 key=key,
                 field_name=field_name,
                 raw_value=item.get("value", ""),
+                sequence=sequence,
                 type_hint=meta.get("type") or None,
                 unit=meta.get("unit") or None,
                 description=meta.get("description") or None,
@@ -319,10 +321,9 @@ def find_by_field(
     ``charging_state_report.current_charge_state`` can appear several times
     under different UUIDs with conflicting values. We prefer usable readings,
     then the **freshest** one (by its own ``timestampUtc`` / captured time).
-    When no timestamps distinguish the candidates we fall back to the smallest
-    ``key`` (UUID) — an arbitrary but *stable* choice so a curated sensor keeps
-    tracking the same point across refreshes instead of flip-flopping when the
-    portal reshuffles the array.
+    When no timestamps distinguish the candidates we use the last occurrence in
+    the ZIP. The portal often bundles minute-level snapshots in array order, so
+    the last duplicate is the best proxy for the freshest value.
     """
     matches = [dp for dp in points.values() if dp.field_name == field_name]
     if not matches:
@@ -338,7 +339,7 @@ def find_by_field(
 
     top = rank(max(candidates, key=rank))
     tied = [dp for dp in candidates if rank(dp) == top]
-    return min(tied, key=lambda dp: dp.key)
+    return max(tied, key=lambda dp: dp.sequence)
 
 
 # Field suffixes that carry when the vehicle last reported to the backend.
@@ -711,7 +712,7 @@ class CuratedSensor:
     unit: str | None = None
     state_class: str | None = None
     icon: str | None = None
-    # transform: "duration_s" converts "0s" -> seconds; None keeps parse_value
+    # transform: "duration_min" converts portal seconds into minutes; None keeps parse_value
     transform: str | None = None
     # companion field holding the unit enum (e.g. "mileage.unit"); when set, the
     # sensor's unit is resolved from it at runtime, falling back to ``unit``.
@@ -872,18 +873,18 @@ CURATED_SENSORS_DOTTED: tuple[CuratedSensor, ...] = (
         "battery_state_report.remaining_charging_time_complete",
         "Remaining charging time",
         "duration",
-        "s",
+        "min",
         "measurement",
-        transform="duration_s",
+        transform="duration_min",
         icon="mdi:battery-clock",
     ),
     CuratedSensor(
         "battery_state_report.remaining_charging_time_bulk",
         "Remaining time to bulk",
         "duration",
-        "s",
+        "min",
         "measurement",
-        transform="duration_s",
+        transform="duration_min",
         icon="mdi:battery-clock",
     ),
     CuratedSensor(

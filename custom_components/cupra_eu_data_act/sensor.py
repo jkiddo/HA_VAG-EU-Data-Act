@@ -45,6 +45,37 @@ _LAST_CONNECTED_CURATED_FIELDS = frozenset(
     {"mileage.value.timestamp", "mileage.timestamp"}
 )
 
+_REMAINING_CHARGE_TIME_FIELDS = frozenset(
+    {
+        "battery_state_report.remaining_charging_time_complete",
+        "battery_state_report.remaining_charging_time_bulk",
+        "remaining_charging_time",
+    }
+)
+
+
+def _charging_time_is_applicable(points: dict[str, DataPoint]) -> bool:
+    """Whether a remaining-charge-time value describes an active charge."""
+    scenario = find_by_field(points, "charging_state_report.charging_scenario")
+    if scenario and str(scenario.value).endswith("_OFF"):
+        return False
+
+    power = find_by_field(points, "battery_state_report.charge_power")
+    if power is not None:
+        try:
+            if float(power.value) <= 0:
+                return False
+        except (TypeError, ValueError):
+            pass
+
+    state = find_by_field(points, "charging_state_report.current_charge_state")
+    if state and "CHARGING" in str(state.value):
+        return True
+
+    # Flat/PHEV payloads do not always expose the same companion fields. If no
+    # inactive signal exists, keep the portal's remaining time value.
+    return scenario is None and power is None and state is None
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -171,6 +202,12 @@ class EudaCuratedSensor(EudaEntity, SensorEntity):
             # Already handled by parse_duration_seconds in parse_value
             return value
 
+        if transform == "duration_min":
+            try:
+                return round(float(value) / 60, 1)
+            except (TypeError, ValueError):
+                return None
+
         if transform == "decikelvin_to_celsius":
             from .data import decikelvin_to_celsius
 
@@ -201,6 +238,11 @@ class EudaCuratedSensor(EudaEntity, SensorEntity):
                 return self._sticky(round(delta, 3))
             # Ignore resets / plateaus and keep the previous "last charge" value.
             return self._sticky(None)
+
+        if field_name in _REMAINING_CHARGE_TIME_FIELDS and not _charging_time_is_applicable(
+            self.coordinator.data or {}
+        ):
+            return None
 
         dp = find_by_field(self.coordinator.data or {}, field_name)
 
@@ -253,6 +295,13 @@ class EudaCuratedSensor(EudaEntity, SensorEntity):
                 from .data import parse_timestamp
 
                 transformed = parse_timestamp(raw_value)
+                return self._sticky(transformed)
+
+            elif self._curated.transform == "duration_min":
+                try:
+                    transformed = round(float(raw_value) / 60, 1)
+                except (TypeError, ValueError):
+                    transformed = None
                 return self._sticky(transformed)
 
         if self._curated.translation_key:

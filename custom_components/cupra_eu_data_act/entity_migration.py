@@ -54,6 +54,13 @@ _INSTRUMENT_CLUSTER_RAW_NAMES = frozenset(
     {"instrument_cluster_time", "profile_state_report.instrument_cluster_time"}
 )
 
+_MINUTE_DURATION_FIELDS = frozenset(
+    {
+        "battery_state_report.remaining_charging_time_complete",
+        "battery_state_report.remaining_charging_time_bulk",
+    }
+)
+
 
 def entity_registry_updates(
     reg_entry: er.RegistryEntry,
@@ -101,11 +108,28 @@ def entity_registry_updates(
             return {"disabled_by": er.RegistryEntryDisabler.INTEGRATION}
 
     updates: dict = {}
+    prefix = f"{vin}_"
+    field = (
+        reg_entry.unique_id[len(prefix) :]
+        if reg_entry.unique_id.startswith(prefix)
+        else None
+    )
+    if (
+        field in _MINUTE_DURATION_FIELDS
+        and (
+            getattr(reg_entry, "unit_of_measurement", None) == "s"
+            or reg_entry.options.get("sensor.private", {}).get(
+                "suggested_unit_of_measurement"
+            )
+            == "s"
+        )
+    ):
+        updates["unit_of_measurement"] = "min"
     key = translation_key_for_unique_id(reg_entry.unique_id, vin)
     if not key:
-        return None
+        return updates or None
     if reg_entry.translation_key == key and reg_entry.name is None:
-        return None
+        return updates or None
     updates["translation_key"] = key
     updates["name"] = None
     return updates
@@ -134,3 +158,30 @@ async def async_migrate_entity_translations(
         )
 
     await er.async_migrate_entries(hass, entry.entry_id, _migrate)
+
+    prefix = f"{vin}_"
+    for reg_entry in er.async_entries_for_config_entry(registry, entry.entry_id):
+        field = (
+            reg_entry.unique_id[len(prefix) :]
+            if reg_entry.unique_id.startswith(prefix)
+            else None
+        )
+        if (
+            field in _MINUTE_DURATION_FIELDS
+            and (
+                getattr(reg_entry, "unit_of_measurement", None) == "s"
+                or reg_entry.options.get("sensor.private", {}).get(
+                    "suggested_unit_of_measurement"
+                )
+                == "s"
+            )
+        ):
+            registry.async_update_entity_options(
+                reg_entry.entity_id,
+                "sensor.private",
+                None,
+            )
+            registry.async_update_entity(
+                reg_entry.entity_id,
+                unit_of_measurement="min",
+            )

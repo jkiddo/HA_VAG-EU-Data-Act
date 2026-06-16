@@ -104,6 +104,9 @@
       "battery_state_report_soc": {
         "name": "Batterie"
       },
+      "hv_battery_level": {
+        "name": "Niveau batterie HV"
+      },
       "settings_target_soc": {
         "name": "Niveau de charge cible"
       },

@@ -179,6 +179,46 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
             for item in self._cache.list_entries(self.vin)
         ]
 
+    def _parse_cached_zip(self, name: str, raw: bytes) -> dict[str, DataPoint] | None:
+        """Parse a cached ZIP and update coordinator metadata (executor only)."""
+        payload = self.client.parse_dataset_zip(raw, name)
+        dataset = Dataset.from_json(payload)
+        points = dataset.points
+        if not points:
+            return None
+        self.latest_dataset = dataset
+        self.latest_dataset_name = name
+        self.dataset_created_at = _filename_timestamp(name)
+        self._cached_dataset_meta = [
+            {
+                "name": item.name,
+                "size": item.size,
+                "mtime": item.mtime.isoformat(),
+            }
+            for item in self._cache.list_entries(self.vin)
+        ]
+        self._is_initial_setup = False
+        return points
+
+    async def async_restore_from_cache(self) -> dict[str, DataPoint] | None:
+        """Load the newest local ZIP when memory was cleared (e.g. after HA restart)."""
+        cached = await self.hass.async_add_executor_job(self._cache.read_latest, self.vin)
+        if not cached:
+            return None
+        name, raw = cached
+
+        def _parse() -> dict[str, DataPoint] | None:
+            return self._parse_cached_zip(name, raw)
+
+        points = await self.hass.async_add_executor_job(_parse)
+        if points:
+            _LOGGER.info(
+                "Restored vehicle data from local cache (%s, %d fields)",
+                name,
+                len(points),
+            )
+        return points
+
     def _record_download_attempt(
         self,
         name: str,
@@ -247,7 +287,22 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
 
     async def _async_update_data(self) -> dict[str, DataPoint]:
         self._listing_failed = False
-        listing = await self._async_list_with_refresh()
+        cached_points: dict[str, DataPoint] | None = None
+        if not self.data:
+            cached_points = await self.async_restore_from_cache()
+
+        try:
+            listing = await self._async_list_with_refresh()
+        except UpdateFailed as err:
+            if cached_points:
+                self.status_label = "listing_failed"
+                _LOGGER.warning(
+                    "Portal listing failed (%s); using last cached dataset %s",
+                    err,
+                    self.latest_dataset_name,
+                )
+                return cached_points
+            raise
         self._update_listing_metadata(listing)
 
         # content datasets, oldest -> newest by createdOn
@@ -414,6 +469,14 @@ class EudaCoordinator(DataUpdateCoordinator[dict[str, DataPoint]]):
                 if not _is_server_error(last_error):
                     self._reschedule(listing)
                 return self.data
+            if cached_points:
+                self.status_label = "listing_failed"
+                _LOGGER.warning(
+                    "Could not download any dataset (%s); using last cached dataset %s",
+                    last_error,
+                    self.latest_dataset_name,
+                )
+                return cached_points
             # First load failure: raise so HA retries setup
             _LOGGER.error(
                 "Could not download any dataset on first load: %s. Will retry in %s.",

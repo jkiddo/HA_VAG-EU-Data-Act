@@ -104,6 +104,9 @@
       "battery_state_report_soc": {
         "name": "Batteria"
       },
+      "hv_battery_level": {
+        "name": "Livello batteria HV"
+      },
       "settings_target_soc": {
         "name": "Livello di carica target"
       },

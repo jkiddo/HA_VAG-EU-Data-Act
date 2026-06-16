@@ -1,5 +1,55 @@
 # Release notes
 
+## v0.6.17 — Cache restore, charging time fixes & HV battery label (2026-06-16)
+
+### Summary
+
+Restores vehicle data from the local ZIP cache after a Home Assistant restart or
+when the portal listing fails, fixes the **`refresh_now`** service, and improves
+remaining-charge-time sensors and duplicate-field handling.
+
+### Cache restore on startup / portal outage
+
+- After HA restart, the integration now loads the **newest local dataset ZIP**
+  immediately so curated sensors keep their last-known values instead of showing
+  **unavailable**.
+- When portal listing or download fails but a cache exists, the coordinator
+  serves cached data with status **`listing_failed`** instead of clearing all
+  entities.
+
+### Remaining charging time
+
+- **Remaining charging time** and **Remaining time to bulk** now display in
+  **minutes** (portal values are converted from seconds).
+- Values are hidden when the car is not actively charging (e.g. charge power
+  ≤ 0 or charging scenario OFF).
+- Entity registry migration clears stale **`sensor.private`** unit overrides
+  that forced seconds and sets the unit to **`min`**.
+
+### HV battery level label
+
+- Curated **`battery_level_HV.value`** now uses translation key
+  **`hv_battery_level`** (e.g. **HV-Batteriestand** in German) so it no longer
+  duplicates the generic **Battery** name from **`battery_state_report.soc`**.
+
+### Duplicate field selection
+
+- When the portal sends the same field multiple times without distinct
+  timestamps, the integration now keeps the **last occurrence in the ZIP**
+  (array order) instead of the smallest UUID key.
+
+### Bug fix
+
+- **`refresh_now`** service — fixed handler registration so Home Assistant can
+  trigger an immediate portal refresh again.
+
+### Tests
+
+- Cache `read_latest` and coordinator restore-from-cache on HTTP 503.
+- Updated duplicate-field and duration-transform offline checks.
+
+---
+
 ## v0.6.16 — Timestamp labels & vehicle clock dedup (2026-06-15)
 
 ### Summary

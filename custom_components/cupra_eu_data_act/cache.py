@@ -78,6 +78,16 @@ class DatasetCache:
         entries.sort(key=lambda item: item.mtime, reverse=True)
         return entries
 
+    def read_latest(self, vin: str) -> tuple[str, bytes] | None:
+        """Return the newest cached ZIP (name, raw bytes), or None."""
+        entries = self.list_entries(vin)
+        if not entries:
+            return None
+        path = self._vin_dir(vin) / entries[0].name
+        if not path.is_file():
+            return None
+        return entries[0].name, path.read_bytes()
+
     def _rotate(self, target_dir: Path) -> None:
         """Drop oldest ZIPs when count or total size exceeds limits."""
         files = sorted(

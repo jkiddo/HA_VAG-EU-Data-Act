@@ -77,20 +77,19 @@ def main() -> int:
     check("iso Z", cct is not None and cct.tzinfo is not None, True)
     check("iso offset", data.parse_timestamp("2026-05-29T22:59:27+02:00") is not None, True)
 
-    # --- duplicate field: deterministic selection regardless of order -----
+    # --- duplicate field: latest array occurrence wins without timestamps ---
     print("duplicate field selection:")
-    dup_entries = [
-        {"key": "ccc", "dataFieldName": "charging_state_report.current_charge_state", "value": "C"},
-        {"key": "aaa", "dataFieldName": "charging_state_report.current_charge_state", "value": "A"},
-        {"key": "bbb", "dataFieldName": "charging_state_report.current_charge_state", "value": "B"},
-    ]
-    picks = set()
-    for order in ([0, 1, 2], [2, 1, 0], [1, 2, 0]):
-        ds_d = data.Dataset.from_json(
-            {"vin": "V", "user_id": "u", "Data": [dup_entries[i] for i in order]}
-        )
-        picks.add(_field_val(ds_d, "charging_state_report.current_charge_state"))
-    check("stable pick under shuffle", picks, {"A"})
+    ds_d = data.Dataset.from_json(
+        {
+            "vin": "V",
+            "user_id": "u",
+            "Data": [
+                {"key": "aaa", "dataFieldName": "charging_state_report.current_charge_state", "value": "A"},
+                {"key": "bbb", "dataFieldName": "charging_state_report.current_charge_state", "value": "B"},
+            ],
+        }
+    )
+    check("last duplicate wins", _field_val(ds_d, "charging_state_report.current_charge_state"), "B")
 
     # --- curated / raw classification ------------------------------------
     print("curated registry:")
@@ -305,11 +304,11 @@ def main() -> int:
         120,
     )
     no_ts = {
-        "ccc": data.DataPoint("ccc", "mileage", "3"),
-        "aaa": data.DataPoint("aaa", "mileage", "1"),
+        "ccc": data.DataPoint("ccc", "mileage", "3", sequence=0),
+        "aaa": data.DataPoint("aaa", "mileage", "1", sequence=1),
     }
     check(
-        "no timestamps -> stable min(key)",
+        "no timestamps -> latest sequence",
         data.find_by_field(no_ts, "mileage").value,
         1,
     )
@@ -528,22 +527,22 @@ def main() -> int:
     check("AuthError is ApiError", isinstance(auth_err, api.ApiError), True)
     check("AuthError default status None", auth_err.status, None)
 
-    # --- find_by_field stability against shuffle ------------------------
+    # --- find_by_field duplicate handling -------------------------------
     print("find_by_field:")
     points = {
-        "ccc": data.DataPoint("ccc", "charging_state_report.current_charge_state", "C"),
-        "aaa": data.DataPoint("aaa", "charging_state_report.current_charge_state", "A"),
-        "bbb": data.DataPoint("bbb", "charging_state_report.current_charge_state", "B"),
+        "ccc": data.DataPoint("ccc", "charging_state_report.current_charge_state", "C", sequence=0),
+        "aaa": data.DataPoint("aaa", "charging_state_report.current_charge_state", "A", sequence=1),
+        "bbb": data.DataPoint("bbb", "charging_state_report.current_charge_state", "B", sequence=2),
     }
     dp = data.find_by_field(points, "charging_state_report.current_charge_state")
-    check("smallest key wins", dp.key, "aaa")
+    check("latest sequence wins", dp.key, "bbb")
     check("missing field -> None", data.find_by_field(points, "nope"), None)
     check(
         "Dataset.by_field still works",
         data.Dataset(
             vin="V", user_id=None, points=points
         ).by_field("charging_state_report.current_charge_state").key,
-        "aaa",
+        "bbb",
     )
 
     # --- api zip helper ---------------------------------------------------
@@ -750,6 +749,20 @@ def main() -> int:
         "primary range falls back to cruising_ranges unit",
         data.resolve_primary_range_unit(ds_cruising.points),
         "mi",
+    )
+
+    # --- duplicate field ordering within one portal ZIP --------------------
+    print("duplicate field ordering:")
+    ds_duplicate = data.Dataset.from_json({"vin": "V", "user_id": "u", "Data": [
+        {"key": "first", "dataFieldName": "battery_state_report.charge_power",
+         "value": "10.0"},
+        {"key": "second", "dataFieldName": "battery_state_report.charge_power",
+         "value": "0.0"},
+    ]})
+    check(
+        "last duplicate without timestamp wins",
+        data.find_by_field(ds_duplicate.points, "battery_state_report.charge_power").value,
+        0.0,
     )
 
     # --- charged-energy harmonisation across dataset formats ----------------

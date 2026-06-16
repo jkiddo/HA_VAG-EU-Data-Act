@@ -68,6 +68,12 @@ _BY_ENGLISH: dict[str, dict[str, str]] = {
         "it": "Capacità batteria",
         "nl": "Accucapaciteit",
     },
+    "HV battery level": {
+        "de": "HV-Batteriestand",
+        "fr": "Niveau batterie HV",
+        "it": "Livello batteria HV",
+        "nl": "HV-accuniveau",
+    },
     "BCAM charge threshold": {
         "de": "BCAM-Ladeschwelle",
         "fr": "Seuil de charge BCAM",
@@ -151,6 +157,18 @@ _BY_ENGLISH: dict[str, dict[str, str]] = {
         "fr": "Dernière connexion",
         "it": "Ultima connessione",
         "nl": "Laatst verbonden",
+    },
+    "Last vehicle update": {
+        "de": "Letztes Fahrzeug-Update",
+        "fr": "Dernière mise à jour véhicule",
+        "it": "Ultimo aggiornamento veicolo",
+        "nl": "Laatste voertuigupdate",
+    },
+    "Dataset generated": {
+        "de": "Datensatz erzeugt",
+        "fr": "Jeu de données généré",
+        "it": "Dataset generato",
+        "nl": "Dataset gegenereerd",
     },
     "Last telemetry": {
         "de": "Letzte Telemetrie",
@@ -451,6 +469,7 @@ _BY_ENGLISH: dict[str, dict[str, str]] = {
 # translation_key -> English name (all curated sensors)
 _SENSOR_KEYS: dict[str, str] = {
     "battery_state_report_soc": "Battery",
+    "hv_battery_level": "HV battery level",
     "settings_target_soc": "Target charge level",
     "battery_state_report_charge_bulk_threshold": "Charge bulk threshold",
     "battery_state_report_charge_power": "Charge power",
@@ -527,6 +546,9 @@ _SENSOR_KEYS: dict[str, str] = {
     "oil_level_dipstick_indicator_function": "Oil dipstick indicator",
     "mileage_timestamp": "Last connected",
     "last_charge_kwh": "Last charge",
+    "last_connected": "Last connected",
+    "last_vehicle_update": "Last vehicle update",
+    "dataset_generated": "Dataset generated",
     "days_until_subscription_expires": "Days until subscription expires",
     "minutes_since_last_snapshot": "Minutes since last snapshot",
     "uncurated_fields_count": "Uncurated fields",

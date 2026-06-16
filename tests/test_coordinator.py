@@ -198,6 +198,53 @@ async def test_successful_download_sets_latest_dataset_name(hass) -> None:
     assert coordinator.last_download_attempts[0]["at"]
 
 
+async def test_http_503_listing_restores_from_cache_when_no_memory_data(hass) -> None:
+    client = MagicMock()
+    client.async_list_datasets = AsyncMock(
+        side_effect=ApiError("HTTP 503", status=503)
+    )
+    client.async_get_metadata = AsyncMock(
+        side_effect=ApiError("no metadata", status=400)
+    )
+    _mock_client_with_zip(
+        client,
+        {
+            "user_id": "u1",
+            "Data": [
+                {
+                    "key": "key-1",
+                    "dataFieldName": "battery_state_report.soc",
+                    "value": "72",
+                }
+            ],
+        },
+    )
+    coordinator = _make_coordinator(hass, client)
+    dataset_name = "WVWZZZTESTVIN0001_20260101000000.zip"
+    coordinator._store_in_cache(dataset_name, _zip_bytes({"user_id": "u1", "Data": []}))
+    coordinator._store_in_cache(
+        dataset_name,
+        _zip_bytes(
+            {
+                "user_id": "u1",
+                "Data": [
+                    {
+                        "key": "key-1",
+                        "dataFieldName": "battery_state_report.soc",
+                        "value": "72",
+                    }
+                ],
+            }
+        ),
+    )
+
+    result = await coordinator._async_update_data()
+
+    assert result["key-1"].value == 72
+    assert coordinator.status_label == "listing_failed"
+    assert coordinator.latest_dataset_name == dataset_name
+
+
 async def test_http_503_listing_sets_listing_failed_and_backoff(hass) -> None:
     client = MagicMock()
     client.async_list_datasets = AsyncMock(

@@ -104,6 +104,9 @@
       "battery_state_report_soc": {
         "name": "Accu"
       },
+      "hv_battery_level": {
+        "name": "HV-accuniveau"
+      },
       "settings_target_soc": {
         "name": "Laaddoel"
       },

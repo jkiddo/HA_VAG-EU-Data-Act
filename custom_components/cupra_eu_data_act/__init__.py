@@ -97,6 +97,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: EudaConfigEntry) -> bool
 
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+        if cached_points := await coordinator.async_restore_from_cache():
+            coordinator.status_label = "ok"
+            coordinator.async_set_updated_data(cached_points)
+
         @callback
         def _on_coordinator_update() -> None:
             async_update_issues(hass, entry, coordinator)

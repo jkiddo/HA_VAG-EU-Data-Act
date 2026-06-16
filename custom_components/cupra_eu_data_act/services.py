@@ -88,7 +88,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN,
         SERVICE_REFRESH_NOW,
-        _async_handle_refresh_now,
+        lambda call: _async_handle_refresh_now(hass, call),
         schema=REFRESH_NOW_SCHEMA,
     )
 

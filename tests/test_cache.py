@@ -65,6 +65,11 @@ def main() -> int:
     cache.store(vin, "../evil.zip", _make_zip())
     check("no extra file", len(cache.list_entries(vin)), before)
 
+    print("read_latest:")
+    latest = cache.read_latest(vin)
+    check("read_latest name", latest[0] if latest else None, "d_20260104000000.zip")
+    check("read_latest bytes", bool(latest[1]) if latest else False, True)
+
     print("rotation by size:")
     big_cache = DatasetCache(tmp / "big", max_files=10, max_bytes_per_vin=500)
     big_cache.store(vin, "big1.zip", b"x" * 300)
