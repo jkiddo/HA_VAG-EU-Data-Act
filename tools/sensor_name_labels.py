@@ -504,6 +504,7 @@ _SENSOR_KEYS: dict[str, str] = {
     "range": "Electric range",
     "scr_range": "SCR range",
     "state_of_charge": "Battery",
+    "charging_power": "Charge power",
     "remaining_charging_time": "Remaining charging time",
     "charged_energy": "Total energy charged",
     "fuel_level_current_level": "Fuel level",

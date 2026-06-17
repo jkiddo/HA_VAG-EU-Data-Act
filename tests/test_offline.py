@@ -52,6 +52,53 @@ def main() -> int:
         "remaining_climate_time",
     )
 
+    # --- Terramar / PHEV flat field aliases (#18) -------------------------
+    print("Terramar field aliases (#18):")
+    check(
+        "climatisation alias",
+        data.normalize_field_name("remaining_climatisation_time", None),
+        "remaining_climate_time",
+    )
+    check(
+        "plug1 connection alias",
+        data.normalize_field_name("charging_plug1_connectionstate", None),
+        "plug_state",
+    )
+    check("charging_power curated flat", "charging_power" in data.CURATED_FIELDS, True)
+    terramar = data.Dataset.from_json(
+        {
+            "vin": "V",
+            "Data": [
+                {
+                    "key": "rc",
+                    "dataFieldName": "remaining_climatisation_time",
+                    "value": "0",
+                },
+                {
+                    "key": "plug",
+                    "dataFieldName": "charging_plug1_connectionstate",
+                    "value": "disconnected",
+                },
+                {"key": "cp", "dataFieldName": "charging_power", "value": "0"},
+            ],
+        }
+    )
+    check(
+        "climatisation normalised in dataset",
+        data.find_by_field(terramar.points, "remaining_climate_time") is not None,
+        True,
+    )
+    check(
+        "plug normalised in dataset",
+        data.find_by_field(terramar.points, "plug_state") is not None,
+        True,
+    )
+    check(
+        "charging_power in dataset",
+        data.find_by_field(terramar.points, "charging_power").value,
+        0,
+    )
+
     # --- dataset (committed fixture) --------------------------------------
     print("sample dataset:")
     sample_path = FIXTURES / "sample_dataset.json"

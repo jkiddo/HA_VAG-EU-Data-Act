@@ -61,6 +61,8 @@ def _charging_time_is_applicable(points: dict[str, DataPoint]) -> bool:
         return False
 
     power = find_by_field(points, "battery_state_report.charge_power")
+    if power is None:
+        power = find_by_field(points, "charging_power")
     if power is not None:
         try:
             if float(power.value) <= 0:

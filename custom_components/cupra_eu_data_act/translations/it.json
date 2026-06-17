@@ -209,6 +209,9 @@
       "state_of_charge": {
         "name": "Batteria"
       },
+      "charging_power": {
+        "name": "Potenza di carica"
+      },
       "remaining_charging_time": {
         "name": "Tempo di carica rimanente"
       },

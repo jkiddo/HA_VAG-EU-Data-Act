@@ -121,6 +121,13 @@ _ENUM_TOKEN_RE = re.compile(r"^[A-Z][A-Z0-9_]*$")
 # entity from the dictionary description instead.
 _GENERIC_FIELD_NAMES = {"value", "state", "unit", "is_set", "type", "id"}
 
+# Portal field-name aliases: same semantic field, different name on some models
+# (e.g. Cupra Terramar PHEV flat format — issue #18).
+_FIELD_ALIASES: dict[str, str] = {
+    "remaining_climatisation_time": "remaining_climate_time",
+    "charging_plug1_connectionstate": "plug_state",
+}
+
 
 def normalize_field_name(field_name: str, description: str | None) -> str:
     """Give generic portal field names a stable, matchable identity.
@@ -130,11 +137,11 @@ def normalize_field_name(field_name: str, description: str | None) -> str:
     collide across unrelated ``value`` fields.
     """
     if field_name.lower() not in _GENERIC_FIELD_NAMES or not description:
-        return field_name
+        return _FIELD_ALIASES.get(field_name, field_name)
     desc = description.strip().lower()
     if "primary range" in desc:
         return "value_of_the_primary_range"
-    return field_name
+    return _FIELD_ALIASES.get(field_name, field_name)
 
 
 def enum_members(description: str | None) -> list[str]:
@@ -1301,6 +1308,14 @@ CURATED_SENSORS_FLAT: tuple[CuratedSensor, ...] = (
         "battery",
         "%",
         "measurement",
+    ),
+    CuratedSensor(
+        "charging_power",
+        "Charge power",
+        "power",
+        "kW",
+        "measurement",
+        icon="mdi:flash",
     ),
     CuratedSensor(
         "remaining_charging_time",

@@ -209,6 +209,9 @@
       "state_of_charge": {
         "name": "Accu"
       },
+      "charging_power": {
+        "name": "Laadvermogen"
+      },
       "remaining_charging_time": {
         "name": "Resterende laadtijd"
       },
