@@ -1,5 +1,44 @@
 # Release notes
 
+## v0.6.19 — SoC/mileage freshness guard fix (2026-06-17)
+
+### Summary
+
+Fixes **battery level (SoC) oscillation** and **mileage regression** when the
+portal delivers duplicate field slots or when the coordinator falls back to an
+older dataset after a download failure.
+
+Value fields such as `battery_state_report.soc` and `mileage.value` carry no
+per-item `timestampUtc`. The existing freshness guard in `merge_data_points` and
+the ranking in `find_by_field` therefore did nothing for exactly the fields
+users report — stale readings could win by ZIP byte order or overwrite fresher
+state on fallback.
+
+### Change
+
+- Stamp each `DataPoint` with the dataset's `car_captured_time` during
+  `Dataset.from_json`.
+- `_datapoint_freshness` falls back to that dataset-level timestamp when a point
+  has no per-item timestamp.
+
+No call-site changes. Fields that already expose `timestampUtc` behave as before.
+
+Fixes [#15](https://github.com/TommiG1/HA_VAG-EU-Data-Act/issues/15) (integration-side
+part of [mikrohard#24](https://github.com/mikrohard/hass-vw-eu-data-act/issues/24)).
+
+**Scope:** This addresses cross-dataset regression/oscillation and duplicate-key
+selection. It does **not** reorder conflicting snapshots **within** a single ZIP
+(portal-side). Two SoC slots at the same capture time may still tie on freshness;
+a follow-up `prefer_max_value` hardening for mileage/SoC remains optional.
+
+### Tests
+
+- Offline regression: `from_json` stamps `captured_at` on value points.
+- Older fallback dataset does not regress SoC (no per-item timestamp).
+- Fresher dataset's SoC wins among lingering duplicate keys in the merged store.
+
+---
+
 ## v0.6.18 — Tyre pressure validity fix (2026-06-16)
 
 ### Summary
