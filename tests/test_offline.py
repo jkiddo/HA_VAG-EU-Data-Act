@@ -439,6 +439,45 @@ def main() -> int:
         61,
     )
 
+    # Monotonic fields (the odometer): one dataset can carry two mileage.value
+    # slots from report snapshots that lag each other. The freshest/last-in-ZIP
+    # default would pick the lower one; prefer_max_value picks the truest (max).
+    print("monotonic odometer prefers the highest duplicate slot:")
+    dual = data.Dataset.from_json(
+        {
+            "vin": "V",
+            "Data": [
+                {"key": "m-hi", "dataFieldName": "mileage.value", "value": "70908"},
+                {"key": "m-lo", "dataFieldName": "mileage.value", "value": "70876"},
+                {
+                    "key": "cct",
+                    "dataFieldName": "car_captured_time",
+                    "value": "2026-01-02T10:00:00Z",
+                },
+            ],
+        }
+    )
+    check(
+        "default picks last-in-ZIP slot",
+        data.find_by_field(dual.points, "mileage.value").value,
+        70876,
+    )
+    check(
+        "prefer_max_value picks highest slot",
+        data.find_by_field(
+            dual.points, "mileage.value", prefer_max_value=True
+        ).value,
+        70908,
+    )
+    check(
+        "mileage curated sensor is flagged monotonic",
+        any(
+            c.field_name == "mileage.value" and c.monotonic
+            for c in data.CURATED_SENSORS_DOTTED
+        ),
+        True,
+    )
+
     print("last_connected_time:")
     sample = json.loads(
         (Path(__file__).parent / "fixtures" / "sample_dataset.json").read_text()

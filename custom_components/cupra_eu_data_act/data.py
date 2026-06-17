@@ -335,8 +335,15 @@ def _datapoint_freshness(dp: DataPoint) -> datetime | None:
     return dp.captured_at
 
 
+def _as_float(raw) -> float | None:
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
 def find_by_field(
-    points: dict[str, DataPoint], field_name: str
+    points: dict[str, DataPoint], field_name: str, *, prefer_max_value: bool = False
 ) -> DataPoint | None:
     """Return a single data point for a (possibly duplicated) field name.
 
@@ -348,6 +355,12 @@ def find_by_field(
     When no timestamps distinguish the candidates we use the last occurrence in
     the ZIP. The portal often bundles minute-level snapshots in array order, so
     the last duplicate is the best proxy for the freshest value.
+
+    ``prefer_max_value`` is for monotonic fields (the odometer): one dataset can
+    carry several ``mileage.value`` slots from report snapshots that lag each
+    other (e.g. 70876 vs 70908 at the same capture time), so the **highest**
+    reading is the truest current value. With it set the largest numeric value
+    wins outright; freshness then ZIP position only break exact-value ties.
     """
     matches = [dp for dp in points.values() if dp.field_name == field_name]
     if not matches:
@@ -360,6 +373,15 @@ def find_by_field(
     def rank(dp: DataPoint) -> tuple[bool, datetime]:
         fresh = _datapoint_freshness(dp)
         return (fresh is not None, fresh or _MIN_DT)
+
+    if prefer_max_value:
+        def value_rank(dp: DataPoint):
+            num = _as_float(dp.raw_value)
+            # numeric beats non-numeric, then highest value, then freshest,
+            # then last occurrence in the ZIP
+            return (num is not None, num if num is not None else 0.0, *rank(dp), dp.sequence)
+
+        return max(candidates, key=value_rank)
 
     top = rank(max(candidates, key=rank))
     tied = [dp for dp in candidates if rank(dp) == top]
@@ -759,6 +781,10 @@ class CuratedSensor:
     suggested_display_precision: int | None = None
     # HA entity translation key (name + enum state labels in translations/*.json)
     translation_key: str | None = None
+    # monotonic non-decreasing fields (the odometer): pick the highest of the
+    # duplicate value slots via find_by_field(prefer_max_value=...), so a lagging
+    # report snapshot in the same dataset can't make mileage read low.
+    monotonic: bool = False
 
 
 def curated_translation_key(field_name: str, translation_key: str | None = None) -> str:
@@ -966,6 +992,7 @@ CURATED_SENSORS_DOTTED: tuple[CuratedSensor, ...] = (
         unit_field="mileage.unit",
         unit_resolver="distance",
         suggested_display_precision=0,
+        monotonic=True,
     ),
     CuratedSensor(
         "range.value",
@@ -1245,6 +1272,7 @@ CURATED_SENSORS_FLAT: tuple[CuratedSensor, ...] = (
         "total_increasing",
         icon="mdi:counter",
         suggested_display_precision=0,
+        monotonic=True,
     ),
     CuratedSensor(
         "cruising_range_combined",

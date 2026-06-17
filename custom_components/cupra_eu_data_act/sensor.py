@@ -246,7 +246,11 @@ class EudaCuratedSensor(EudaEntity, SensorEntity):
         ):
             return None
 
-        dp = find_by_field(self.coordinator.data or {}, field_name)
+        dp = find_by_field(
+            self.coordinator.data or {},
+            field_name,
+            prefer_max_value=self._curated.monotonic,
+        )
 
         if not dp:
             return self._sticky(None)
