@@ -335,6 +335,43 @@ def _datapoint_freshness(dp: DataPoint) -> datetime | None:
     return dp.captured_at
 
 
+def datapoint_freshness_source(dp: DataPoint) -> str:
+    """Explain which signal backs :func:`_datapoint_freshness` for a point."""
+    if dp.timestamp:
+        return "timestamp_utc"
+    if dp.field_name.rsplit(".", 1)[-1] in _CAPTURED_TIME_SUFFIXES:
+        if parse_timestamp(dp.raw_value):
+            return "field_captured_time"
+    if dp.captured_at is not None:
+        return "report_captured_time"
+    return "unknown"
+
+
+def datapoint_freshness_attributes(
+    dp: DataPoint | None,
+    *,
+    now: datetime | None = None,
+) -> dict[str, str | int]:
+    """Entity attributes exposing when a reading was captured and how old it is."""
+    if dp is None:
+        return {}
+    captured = _datapoint_freshness(dp)
+    if captured is None:
+        return {}
+    if now is None:
+        now = datetime.now(timezone.utc)
+    if captured.tzinfo is None:
+        captured = captured.replace(tzinfo=timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    age_minutes = max(0, int((now - captured).total_seconds() // 60))
+    return {
+        "data_captured_at": captured.isoformat(),
+        "age_minutes": age_minutes,
+        "freshness_source": datapoint_freshness_source(dp),
+    }
+
+
 def _as_float(raw) -> float | None:
     try:
         return float(raw)

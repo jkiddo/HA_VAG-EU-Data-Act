@@ -1,5 +1,32 @@
 # Release notes
 
+## v0.6.21 — Per-sensor data freshness attributes (2026-06-18)
+
+### Summary
+
+Exposes when each curated and raw sensor reading was captured and how old it is,
+so users can tell fresh vehicle data from stale portal snapshots without
+comparing diagnostic sensors manually ([#22](https://github.com/TommiG1/HA_VAG-EU-Data-Act/issues/22)).
+
+### Entity attributes
+
+Curated and raw (diagnostic) sensors now expose:
+
+| Attribute | Meaning |
+|-----------|---------|
+| `data_captured_at` | Best-known capture time for the displayed value (ISO 8601) |
+| `age_minutes` | Minutes between that capture time and now |
+| `freshness_source` | `timestamp_utc`, `field_captured_time`, or `report_captured_time` |
+
+Value fields such as `battery_state_report.soc` usually have no per-item
+`timestampUtc`; their age comes from the report's `car_captured_time` stamped
+onto the point in `Dataset.from_json`.
+
+Distinct from HA entity `last_updated` (portal poll time) and from the global
+`last_vehicle_update` / `dataset_generated` diagnostic sensors.
+
+---
+
 ## v0.6.20 — Monotonic odometer & Terramar PHEV aliases (2026-06-17)
 
 ### Summary

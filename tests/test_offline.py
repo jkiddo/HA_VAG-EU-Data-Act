@@ -439,6 +439,41 @@ def main() -> int:
         61,
     )
 
+    print("datapoint_freshness_attributes:")
+    from datetime import datetime, timezone
+
+    soc_dp = newer_ds.points["soc"]
+    attrs = data.datapoint_freshness_attributes(
+        soc_dp,
+        now=datetime(2026, 1, 2, 12, 0, tzinfo=timezone.utc),
+    )
+    check(
+        "soc uses report_captured_time source",
+        attrs.get("freshness_source"),
+        "report_captured_time",
+    )
+    check(
+        "soc age_minutes from captured_at",
+        attrs.get("age_minutes"),
+        120,
+    )
+    mileage_dp = data.DataPoint(
+        key="k",
+        field_name="mileage",
+        raw_value="120",
+        timestamp_utc="2026-01-02T10:00:00Z",
+    )
+    check(
+        "timestampUtc source",
+        data.datapoint_freshness_attributes(mileage_dp).get("freshness_source"),
+        "timestamp_utc",
+    )
+    check(
+        "missing point -> no attrs",
+        data.datapoint_freshness_attributes(None),
+        {},
+    )
+
     # Monotonic fields (the odometer): one dataset can carry two mileage.value
     # slots from report snapshots that lag each other. The freshest/last-in-ZIP
     # default would pick the lower one; prefer_max_value picks the truest (max).

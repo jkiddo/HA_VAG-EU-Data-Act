@@ -10,6 +10,7 @@ from homeassistant.components.sensor import (
 from homeassistant.const import EntityCategory, UnitOfTime
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from . import EudaConfigEntry
 from .const import raw_unique_id
@@ -23,6 +24,7 @@ from .data import (
     CuratedSensor,
     DataPoint,
     curated_translation_key,
+    datapoint_freshness_attributes,
     detect_dataset_format,
     field_coverage,
     find_by_field,
@@ -217,6 +219,38 @@ class EudaCuratedSensor(EudaEntity, SensorEntity):
 
         return value
 
+    def _source_datapoint(self) -> DataPoint | None:
+        """Return the portal data point backing ``native_value``."""
+        points = self.coordinator.data or {}
+        field_name = self._curated.field_name
+
+        if ".timestamp" in field_name:
+            return find_by_field(points, field_name.replace(".timestamp", ""))
+
+        if field_name == "last_charge_kwh":
+            for energy_field in (
+                "battery_state_report.charge_energy",
+                "charged_energy",
+            ):
+                dp = find_by_field(points, energy_field)
+                if dp is not None and not is_sentinel(dp.value, dp.field_name):
+                    return dp
+            return None
+
+        if field_name in _REMAINING_CHARGE_TIME_FIELDS and not _charging_time_is_applicable(
+            points
+        ):
+            return None
+
+        dp = find_by_field(
+            points,
+            field_name,
+            prefer_max_value=self._curated.monotonic,
+        )
+        if dp is None or is_sentinel(dp.value, field_name):
+            return None
+        return dp
+
     @property
     def native_value(self):
         if ".timestamp" in self._curated.field_name:
@@ -319,6 +353,13 @@ class EudaCuratedSensor(EudaEntity, SensorEntity):
         return self._sticky(raw_value)
 
     @property
+    def extra_state_attributes(self) -> dict:
+        return datapoint_freshness_attributes(
+            self._source_datapoint(),
+            now=dt_util.utcnow(),
+        )
+
+    @property
     def native_unit_of_measurement(self) -> str | None:
         # When a companion unit field is declared (e.g. mileage.unit), resolve
         # the unit at runtime so miles vs km is reported correctly per vehicle;
@@ -408,6 +449,9 @@ class EudaRawSensor(EudaEntity, SensorEntity):
             attrs["description"] = dp.description
         if dp.cluster:
             attrs["cluster"] = dp.cluster
+        attrs.update(
+            datapoint_freshness_attributes(dp, now=dt_util.utcnow())
+        )
         return attrs
 
 
