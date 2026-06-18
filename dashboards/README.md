@@ -16,18 +16,21 @@ flat) — a copy-paste template would not fit most installations.
 | Purpose | Type | Notes |
 |---------|------|-------|
 | Battery (SOC) | `sensor` | Curated when present in the portal |
-| Electric range | `sensor` | BEV/PHEV |
+| Electric range | `sensor` | BEV/PHEV; ID.7 may use `value_of_the_primary_range` |
 | Charge state / power / target | `sensor` | Read-only — no charge commands |
+| 12V battery voltage | `sensor` | PHEV / flat format (e.g. Terramar), when present |
 | Mileage | `sensor` | When the portal provides it |
 | Vehicle locked | `binary_sensor` | |
 | Integration status | `sensor` | `integration_status` |
-| Data age | `sensor` | `minutes_since_last_snapshot` |
+| Data age | `sensor` | `minutes_since_last_snapshot`; per-sensor `age_minutes` attribute on curated sensors |
 | Subscription expiry | `sensor` | `days_until_subscription_expires` |
-| New portal fields | `sensor` | `uncurated_fields_count` |
+| New portal fields | `sensor` | `uncurated_fields_count` — normal if > 0 |
 | Refresh now | `button` | `refresh` |
 
 Optional (only if the entity exists): battery min/max temperature,
 `last_charge_kwh` (last charging session — not available on all vehicles).
+
+Raw diagnostic sensors (disabled by default) can be ignored for everyday use.
 
 ## Energy dashboard
 

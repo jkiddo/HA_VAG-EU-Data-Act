@@ -69,13 +69,57 @@ get real data without Connect Plus, please share your model in the
 [community thread](https://community.home-assistant.io/t/beta-vw-group-eu-data-act-vehicle-data-for-vw-audi-skoda-seat-cupra-bentley-official-portal/1013514)
 — it helps other owners.
 
+### Setup fails or no data yet?
+
+**Complete portal setup before Home Assistant.** The integration only downloads
+ZIP files from an **already active** continuous 15-minute subscription — it
+cannot create or fix portal requests.
+
+If setup shows *Could not connect to the EU Data Act portal* **after** login and
+vehicle selection, your credentials are usually fine. The error often means the
+portal has no **Identifier** yet for an active continuous request on that VIN
+(onboarding not finished, or the portal backend is having problems).
+
+On the portal, confirm:
+
+1. The vehicle is linked under **Data clusters → Vehicle overview**.
+2. A **continuous** (not one-time) **15-minute** request is active with **All
+   Data**.
+3. Real ZIP files appear for the VIN — first delivery can take **15–60 minutes,
+   sometimes several hours** after creating the request.
+4. Only **one** customised data request can be active at a time ([portal
+   FAQ](https://eu-data-act.drivesomethinggreater.com/pl/en/service/faq.html)).
+   A pending **one-time export** blocks a new continuous request until it
+   finishes (up to 24 hours). The portal often has no cancel button — wait or
+   contact **portal support** via the Contact section.
+
+Then add the integration again (or remove and re-add). If the portal UI itself
+shows errors such as *We couldn't transmit your request*, that is a **portal-side
+problem** — not something this integration can bypass.
+
+After a portal outage, some fields may show stale values until the car uploads
+fresh telemetry again (often after one drive).
+
+### Disabled diagnostic sensors?
+
+Some entities are **raw portal fields**, disabled by default. Ignore them unless
+you are debugging — use the curated sensors (Battery, range, charge state, etc.)
+instead.
+
 ## Portal setup (required)
+
+**Do this first**, before adding the integration in Home Assistant:
 
 1. Open [eu-data-act.drivesomethinggreater.com](https://eu-data-act.drivesomethinggreater.com/)
 2. Sign in and connect your vehicle under **Data clusters → Vehicle overview**
-3. Create a **continuous** data request with **15-minute** frequency
-4. When choosing the dataset, select **All Data** — not only **Charging**. A charging-only request delivers far fewer fields (battery, range, mileage, and many other sensors need the full dataset).
-5. Wait until ZIP files with real content appear
+3. Create a **continuous** data request with **15-minute** frequency — **not** a
+   one-time export
+4. When choosing the dataset, select **All Data** — not only **Charging**. A
+   charging-only request delivers far fewer fields (battery, range, mileage, and
+   many other sensors need the full dataset).
+5. Wait until ZIP files with real content appear for your VIN
+
+Then install the integration and complete setup in Home Assistant.
 
 ## Installation
 
@@ -93,7 +137,39 @@ Copy `custom_components/cupra_eu_data_act` to `config/custom_components/` and re
 
 **Settings → Devices & Services → Add Integration → VW Group EU Data Act**
 
-Select brand, enter credentials, choose vehicle.
+Select brand, enter credentials, choose vehicle. If setup fails at vehicle
+selection, finish [portal setup](#portal-setup-required) first and retry once ZIPs
+are arriving.
+
+## Dataset formats
+
+The portal uses two field naming layouts. The integration detects which one your
+vehicle sends and creates the matching curated sensors:
+
+| Format | Typical vehicles | Example fields |
+|--------|------------------|----------------|
+| **dotted** | ID.x, MEB (Born, ID.4, ID.7, …) | `battery_state_report.soc`, `mileage.value` |
+| **flat** | Terramar PHEV, some hybrid/legacy layouts | `state_of_charge`, `boardnetBatteryVoltageIndication` |
+
+Entity IDs and friendly names differ between formats and languages — pick entities
+from the device page in Home Assistant rather than copying fixed names.
+
+Sensors appear only when the portal delivers the field for your model (e.g.
+**12V battery voltage** on Terramar PHEV).
+
+## Data freshness
+
+Each curated sensor exposes attributes so you can tell how old a reading is:
+
+| Attribute | Meaning |
+|-----------|---------|
+| `data_captured_at` | Best-known capture time for the displayed value (ISO 8601) |
+| `age_minutes` | Minutes between that capture time and now |
+| `freshness_source` | `timestamp_utc`, `field_captured_time`, or `report_captured_time` |
+
+These reflect **vehicle/portal data age**, not the same thing as the entity's
+`last_updated` (when Home Assistant last polled). For overall snapshot age, see
+the diagnostic sensor **Minutes since last snapshot**.
 
 ## Verifying it works
 
