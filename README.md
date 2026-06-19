@@ -202,7 +202,13 @@ for:
 
 - monthly charged energy (kWh)
 - monthly mileage (km/mi, based on your vehicle unit)
-- monthly electric consumption (optional; only when a curated source exists)
+
+> **Note:** Earlier versions (≤ v0.6.22) could auto-create a *Monthly electric
+> consumption* helper from average driving-efficiency sensors (`kWh/100km`).
+> That unit is wrong for a monthly energy total — the portal does not expose
+> cumulative driving energy in kWh. Use **monthly charged energy** for kWh
+> totals. If you still have the old helper, delete it under **Settings →
+> Devices & services → Helpers**.
 
 Additionally, `sensor.<vehicle>_last_charge` exposes the last observed charging
 delta in kWh, derived from cumulative charged-energy updates.

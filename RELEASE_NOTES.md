@@ -1,5 +1,26 @@
 # Release notes
 
+## v0.6.23 — Remove incorrect monthly electric consumption helper (2026-06-19)
+
+### Summary
+
+Stops auto-creating the *Monthly electric consumption* `utility_meter` helper
+([#24](https://github.com/TommiG1/HA_VAG-EU-Data-Act/issues/24)). It was wired
+to average driving-efficiency sensors (`kWh/100km`), so the helper reported the
+wrong unit and meaningless totals. Use **Monthly charged energy** (kWh) for
+monthly energy instead.
+
+### Fix
+
+- Removed the third auto-provisioned utility meter (sources were
+  `long_term_data_average_electr_engine_consumption`,
+  `short_term_data_average_electr_engine_consumption`, or
+  `additional_consumptions.residual_consumption` — all `kWh/100km`).
+- README note: delete any existing *Monthly electric consumption* helper
+  manually; the integration no longer creates new ones.
+
+---
+
 ## v0.6.22 — German charging labels & Terramar 12V voltage (2026-06-18)
 
 ### Summary

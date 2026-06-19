@@ -35,7 +35,6 @@ class UtilityMeterSpec:
 
     helper_name_suffix: str
     source_field_candidates: tuple[str, ...]
-    delta_values: bool = False
 
 
 _AUTO_METERS: tuple[UtilityMeterSpec, ...] = (
@@ -46,15 +45,6 @@ _AUTO_METERS: tuple[UtilityMeterSpec, ...] = (
     UtilityMeterSpec(
         helper_name_suffix="Monthly mileage",
         source_field_candidates=("mileage.value", "mileage"),
-    ),
-    UtilityMeterSpec(
-        helper_name_suffix="Monthly electric consumption",
-        source_field_candidates=(
-            "long_term_data_average_electr_engine_consumption",
-            "short_term_data_average_electr_engine_consumption",
-            "additional_consumptions.residual_consumption",
-        ),
-        delta_values=True,
     ),
 )
 
@@ -118,7 +108,7 @@ async def async_ensure_utility_meters(
             CONF_METER_OFFSET: 0,
             CONF_TARIFFS: [],
             CONF_METER_NET_CONSUMPTION: False,
-            CONF_METER_DELTA_VALUES: spec.delta_values,
+            CONF_METER_DELTA_VALUES: False,
             CONF_METER_PERIODICALLY_RESETTING: True,
             CONF_SENSOR_ALWAYS_AVAILABLE: False,
         }
